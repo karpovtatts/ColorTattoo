@@ -1,0 +1,82 @@
+.button {
+  font-family: var(--font-family);
+  font-weight: 500;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  text-decoration: none;
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Variants */
+.button--primary {
+  background-color: var(--color-primary);
+  color: white;
+}
+
+.button--primary:hover:not(:disabled) {
+  background-color: var(--color-primary-hover);
+}
+
+.button--primary:active:not(:disabled) {
+  background-color: var(--color-primary-active);
+}
+
+.button--secondary {
+  background-color: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+}
+
+.button--secondary:hover:not(:disabled) {
+  background-color: var(--color-bg-tertiary);
+}
+
+.button--outline {
+  background-color: transparent;
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
+}
+
+.button--outline:hover:not(:disabled) {
+  background-color: var(--color-primary);
+  color: white;
+}
+
+.button--danger {
+  background-color: var(--color-error);
+  color: white;
+}
+
+.button--danger:hover:not(:disabled) {
+  background-color: #dc2626;
+}
+
+/* Sizes */
+.button--sm {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: 0.875rem;
+}
+
+.button--md {
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: 1rem;
+}
+
+.button--lg {
+  padding: var(--spacing-md) var(--spacing-lg);
+  font-size: 1.125rem;
+}
+
+.button--full-width {
+  width: 100%;
+}
+

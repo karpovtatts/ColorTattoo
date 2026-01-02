@@ -1,0 +1,17 @@
+.saved-recipes-page {
+  padding: var(--spacing-xl) 0;
+}
+
+.saved-recipes-page__title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: var(--spacing-md);
+  color: var(--color-text-primary);
+}
+
+.saved-recipes-page__description {
+  font-size: 1rem;
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-lg);
+}
+

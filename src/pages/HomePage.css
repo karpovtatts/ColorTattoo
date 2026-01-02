@@ -1,0 +1,42 @@
+.home-page {
+  text-align: center;
+  padding: var(--spacing-xl) 0;
+}
+
+.home-page__title {
+  font-size: 3rem;
+  font-weight: 700;
+  margin-bottom: var(--spacing-md);
+  color: var(--color-text-primary);
+}
+
+.home-page__subtitle {
+  font-size: 1.25rem;
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-xl);
+}
+
+.home-page__content {
+  max-width: 600px;
+  margin: 0 auto;
+  text-align: left;
+  padding: var(--spacing-lg);
+  background-color: var(--color-bg-secondary);
+  border-radius: var(--radius-lg);
+}
+
+.home-page__content p {
+  margin-bottom: var(--spacing-md);
+  line-height: 1.8;
+}
+
+@media (max-width: 768px) {
+  .home-page__title {
+    font-size: 2rem;
+  }
+
+  .home-page__subtitle {
+    font-size: 1rem;
+  }
+}
+
