@@ -1,0 +1,36 @@
+/docs
+  README_FOR_CURSOR.md
+
+  /spec
+    00_vision.md
+    01_scope_and_constraints.md
+    02_users_and_use_cases.md
+    03_color_model.md
+    04_core_flows.md
+    05_ui_ux.md
+    06_data_and_storage.md
+    07_non_functional.md
+    08_platform_and_architecture.md
+    09_roadmap.md
+    10_open_questions.md
+
+  /rules
+    R01_clean_vs_dirty.md
+    R02_black_usage_in_color.md
+    R03_saturation_and_suppression.md
+    R04_warm_cool_logic.md
+
+  /features
+    F01_target_color_to_recipe.md
+    F02_palette_setup.md
+    F03_clean_dirty_analysis.md
+    F04_warm_cool_adjustment.md
+    F05_nearest_color_explanation.md
+    F06_saved_recipes_and_notes.md
+    F07_color_reference_library.md
+    F08_eyedropper_from_image.md
+    F09_color_training_minigame.md
+
+  /project
+    assumptions.md
+    success_criteria.md
