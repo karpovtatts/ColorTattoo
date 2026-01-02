@@ -7,6 +7,7 @@ interface ColorSwatchProps {
   color: Color
   onEdit?: (color: Color) => void
   onDelete?: (id: string) => void
+  onDeleteConfirm?: (id: string) => Promise<void>
   showActions?: boolean
   size?: 'small' | 'medium' | 'large'
 }
@@ -15,6 +16,7 @@ function ColorSwatch({
   color,
   onEdit,
   onDelete,
+  onDeleteConfirm,
   showActions = true,
   size = 'medium',
 }: ColorSwatchProps) {
@@ -24,9 +26,11 @@ function ColorSwatch({
     onEdit?.(color)
   }
 
-  const handleDelete = () => {
-    if (confirm(`Удалить цвет "${color.name || color.hex}"?`)) {
-      onDelete?.(color.id)
+  const handleDelete = async () => {
+    if (onDeleteConfirm) {
+      await onDeleteConfirm(color.id)
+    } else if (onDelete) {
+      onDelete(color.id)
     }
   }
 

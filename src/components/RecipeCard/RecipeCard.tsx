@@ -8,9 +8,10 @@ import './RecipeCard.css'
 interface RecipeCardProps {
   recipe: SavedRecipe
   onDelete: (id: string) => void
+  isDeleting?: boolean
 }
 
-function RecipeCard({ recipe, onDelete }: RecipeCardProps) {
+function RecipeCard({ recipe, onDelete, isDeleting = false }: RecipeCardProps) {
   const navigate = useNavigate()
   const { setTargetColor } = useColorContext()
 
@@ -21,9 +22,7 @@ function RecipeCard({ recipe, onDelete }: RecipeCardProps) {
   }
 
   const handleDelete = () => {
-    if (window.confirm('Вы уверены, что хотите удалить этот рецепт?')) {
-      onDelete(recipe.id)
-    }
+    onDelete(recipe.id)
   }
 
   const formatDate = (date: Date) => {
@@ -76,8 +75,8 @@ function RecipeCard({ recipe, onDelete }: RecipeCardProps) {
         <Button variant="primary" onClick={handleOpen}>
           Открыть
         </Button>
-        <Button variant="danger" onClick={handleDelete}>
-          Удалить
+        <Button variant="danger" onClick={handleDelete} disabled={isDeleting}>
+          {isDeleting ? 'Удаление...' : 'Удалить'}
         </Button>
       </div>
     </div>

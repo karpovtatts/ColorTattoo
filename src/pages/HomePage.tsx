@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Container from '@/components/Container/Container'
 import {
@@ -11,6 +11,7 @@ import {
 import { useColorContext } from '@/contexts/ColorContext'
 import { createColorFromHex, createColorFromRgb } from '@/utils/colorOperations'
 import { validateHex } from '@/utils/colorConversions'
+import { debounce } from '@/utils/debounce'
 import './HomePage.css'
 
 function HomePage() {
@@ -32,6 +33,28 @@ function HomePage() {
     }
   }, [targetColor])
 
+  // Debounced обработчик для HEX ввода
+  const debouncedHexChange = useCallback(
+    debounce((hex: string) => {
+      if (hex === '') {
+        setTargetColor(null)
+        return
+      }
+
+      try {
+        if (validateHex(hex)) {
+          const color = createColorFromHex(hex)
+          setTargetColor(color)
+          setRgbValue(color.rgb)
+          setHexError('')
+        }
+      } catch (error) {
+        setHexError('Неверный формат HEX')
+      }
+    }, 300),
+    []
+  )
+
   const handleHexChange = (hex: string) => {
     setHexValue(hex)
     setHexError('')
@@ -41,15 +64,12 @@ function HomePage() {
       return
     }
 
-    try {
-      if (validateHex(hex)) {
-        const color = createColorFromHex(hex)
-        setTargetColor(color)
-        setRgbValue(color.rgb)
-        setHexError('')
-      }
-    } catch (error) {
+    // Немедленная валидация для отображения ошибок
+    if (!validateHex(hex) && hex.length >= 3) {
       setHexError('Неверный формат HEX')
+    } else {
+      setHexError('')
+      debouncedHexChange(hex)
     }
   }
 

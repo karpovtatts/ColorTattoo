@@ -126,6 +126,30 @@
   justify-content: center;
 }
 
+/* Улучшение адаптивности для мобильных устройств */
+@media (max-width: 768px) {
+  .recipe-page {
+    padding: var(--spacing-md) 0;
+  }
+
+  .recipe-page__title {
+    font-size: 1.5rem;
+  }
+
+  .recipe-page__section-title {
+    font-size: 1.125rem;
+  }
+
+  .recipe-page__target-color {
+    padding: var(--spacing-md);
+  }
+
+  .recipe-page__actions button {
+    width: 100%;
+    min-height: 44px; /* Touch-friendly размер */
+  }
+}
+
 @media (max-width: 768px) {
   .recipe-page__title {
     font-size: 1.5rem;

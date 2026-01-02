@@ -1,0 +1,123 @@
+.toast {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
+  border-radius: var(--border-radius);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  background-color: var(--color-background);
+  border-left: 4px solid;
+  min-width: 300px;
+  max-width: 400px;
+  animation: toast-slide-in 0.3s ease-out;
+  position: relative;
+}
+
+@keyframes toast-slide-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.toast--success {
+  border-left-color: var(--color-success);
+  background-color: #f0fdf4;
+}
+
+.toast--error {
+  border-left-color: var(--color-error);
+  background-color: #fef2f2;
+}
+
+.toast--warning {
+  border-left-color: var(--color-warning);
+  background-color: #fffbeb;
+}
+
+.toast--info {
+  border-left-color: var(--color-info);
+  background-color: #eff6ff;
+}
+
+.toast__content {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+}
+
+.toast__icon {
+  font-size: 1.25rem;
+  font-weight: bold;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.toast--success .toast__icon {
+  color: var(--color-success);
+}
+
+.toast--error .toast__icon {
+  color: var(--color-error);
+}
+
+.toast--warning .toast__icon {
+  color: var(--color-warning);
+}
+
+.toast--info .toast__icon {
+  color: var(--color-info);
+}
+
+.toast__message {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--color-text);
+  line-height: 1.5;
+}
+
+.toast__close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  line-height: 1;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: color 0.2s;
+}
+
+.toast__close:hover {
+  color: var(--color-text);
+}
+
+.toast__close:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+@media (max-width: 768px) {
+  .toast {
+    min-width: 280px;
+    max-width: calc(100vw - 2rem);
+    padding: 0.75rem 0.875rem;
+  }
+
+  .toast__message {
+    font-size: 0.8125rem;
+  }
+}
+

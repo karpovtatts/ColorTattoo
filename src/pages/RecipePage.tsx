@@ -9,9 +9,12 @@ import {
   WarningBadge,
   AnalysisSection,
   SaveRecipeModal,
+  LoadingSpinner,
+  ErrorMessage,
 } from '@/components'
 import { useColorContext } from '@/contexts/ColorContext'
 import { usePaletteContext } from '@/contexts/PaletteContext'
+import { useToastContext } from '@/contexts/ToastContext'
 import { findRecipe } from '@/services/recipeFinder'
 import { saveRecipe, createSavedRecipe } from '@/services/recipeStorage'
 import type { RecipeResult, UnreachableColorResult } from '@/types'
@@ -21,6 +24,7 @@ function RecipePage() {
   const navigate = useNavigate()
   const { targetColor } = useColorContext()
   const { palette, validation } = usePaletteContext()
+  const { success, error: showError } = useToastContext()
   const [recipeResult, setRecipeResult] = useState<
     RecipeResult | UnreachableColorResult | null
   >(null)
@@ -71,9 +75,11 @@ function RecipePage() {
       const savedRecipe = createSavedRecipe(recipeResult.recipe, name, notes)
       saveRecipe(savedRecipe)
       setIsSaveModalOpen(false)
-      // Можно добавить уведомление об успешном сохранении
+      success('Рецепт успешно сохранён')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ошибка при сохранении рецепта')
+      const errorMessage = err instanceof Error ? err.message : 'Ошибка при сохранении рецепта'
+      setError(errorMessage)
+      showError(errorMessage)
     }
   }
 
@@ -117,20 +123,29 @@ function RecipePage() {
 
         {/* Ошибка */}
         {error && (
-          <div className="recipe-page__error">
-            <p className="recipe-page__error-text">{error}</p>
-            <Button variant="primary" onClick={() => navigate('/palette')}>
-              Настроить палитру
-            </Button>
-          </div>
+          <ErrorMessage
+            message={error}
+            title="Ошибка"
+            onRetry={() => {
+              setError(null)
+              if (targetColor) {
+                setIsLoading(true)
+                try {
+                  const result = findRecipe(targetColor, palette)
+                  setRecipeResult(result)
+                } catch (err) {
+                  setError(err instanceof Error ? err.message : 'Ошибка при подборе рецепта')
+                } finally {
+                  setIsLoading(false)
+                }
+              }
+            }}
+            onDismiss={() => setError(null)}
+          />
         )}
 
         {/* Загрузка */}
-        {isLoading && (
-          <div className="recipe-page__loading">
-            <p className="recipe-page__loading-text">Подбор рецепта...</p>
-          </div>
-        )}
+        {isLoading && <LoadingSpinner size="large" text="Подбор рецепта..." />}
 
         {/* Результат */}
         {!isLoading && !error && recipeResult && (
