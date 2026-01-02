@@ -50,3 +50,27 @@ export interface ColorAnalysis {
   explanations: string[]
 }
 
+// Предупреждение
+export interface Warning {
+  type: 'dirty' | 'black_usage' | 'unreachable' | 'other'
+  message: string
+  severity: 'low' | 'medium' | 'high'
+}
+
+// Результат подбора рецепта
+export interface RecipeResult {
+  recipe: Recipe
+  analysis: ColorAnalysis
+  warnings: Warning[]
+  isExactMatch: boolean
+  distance?: number // расстояние до целевого цвета
+}
+
+// Результат для недостижимого цвета
+export interface UnreachableColorResult {
+  targetColor: Color
+  nearestColor: Color
+  distance: number
+  explanation: string
+}
+
