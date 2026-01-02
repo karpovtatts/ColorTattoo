@@ -1,0 +1,108 @@
+.color-swatch {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.color-swatch:hover {
+  border-color: var(--color-primary);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.color-swatch__preview {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  position: relative;
+  transition: transform 0.2s ease;
+}
+
+.color-swatch__preview:hover {
+  transform: scale(1.05);
+}
+
+.color-swatch__tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 0.5rem;
+  padding: 0.5rem;
+  background: var(--color-surface-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  white-space: nowrap;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.color-swatch__tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: var(--color-surface-elevated);
+}
+
+.color-swatch__tooltip-hex {
+  font-weight: 600;
+  font-family: monospace;
+  margin-bottom: 0.25rem;
+}
+
+.color-swatch__tooltip-name {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  margin-bottom: 0.25rem;
+}
+
+.color-swatch__tooltip-rgb {
+  font-size: 0.75rem;
+  color: var(--color-text-tertiary);
+  font-family: monospace;
+}
+
+.color-swatch__name {
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-text);
+}
+
+.color-swatch__actions {
+  display: flex;
+  gap: 0.25rem;
+  justify-content: center;
+}
+
+.color-swatch__action {
+  flex: 1;
+  min-width: 0;
+  padding: 0.25rem;
+  font-size: 0.875rem;
+}
+
+@media (max-width: 768px) {
+  .color-swatch {
+    padding: 0.5rem;
+  }
+
+  .color-swatch__actions {
+    flex-direction: column;
+  }
+}
+

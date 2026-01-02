@@ -15,8 +15,7 @@ import './HomePage.css'
 
 function HomePage() {
   const navigate = useNavigate()
-  const { targetColor, setTargetColor, setTargetColorFromHex, setTargetColorFromRgb } =
-    useColorContext()
+  const { targetColor, setTargetColor } = useColorContext()
 
   const [hexValue, setHexValue] = useState(targetColor?.hex || '')
   const [rgbValue, setRgbValue] = useState(
