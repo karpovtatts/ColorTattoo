@@ -9,5 +9,6 @@ export { default as RGBInput } from './RGBInput/RGBInput'
 export { default as ColorPreview } from './ColorPreview/ColorPreview'
 export { default as ColorPicker } from './ColorPicker/ColorPicker'
 export { default as ColorSwatch } from './ColorSwatch/ColorSwatch'
+export { default as TemperatureIndicator } from './TemperatureIndicator/TemperatureIndicator'
 export { default as AddColorModal } from './AddColorModal/AddColorModal'
 

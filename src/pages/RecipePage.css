@@ -140,6 +140,10 @@
   border-radius: var(--radius-md);
 }
 
+.recipe-page__analysis-item .temperature-indicator {
+  flex: 1;
+}
+
 .recipe-page__analysis-label {
   font-size: 0.875rem;
   font-weight: 600;

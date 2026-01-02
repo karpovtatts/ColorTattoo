@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Container from '@/components/Container/Container'
-import { Button, ColorPreview, ColorSwatch } from '@/components'
+import { Button, ColorPreview, ColorSwatch, TemperatureIndicator } from '@/components'
 import { useColorContext } from '@/contexts/ColorContext'
 import { usePaletteContext } from '@/contexts/PaletteContext'
 import { findRecipe } from '@/services/recipeFinder'
@@ -203,6 +203,13 @@ function RecipePage() {
                       >
                         {recipeResult.analysis.isClean ? '✓ Чистый' : '⚠ Грязный'}
                       </span>
+                    </div>
+                    <div className="recipe-page__analysis-item">
+                      <span className="recipe-page__analysis-label">Температура:</span>
+                      <TemperatureIndicator
+                        color={recipeResult.recipe.resultColor}
+                        size="medium"
+                      />
                     </div>
                     {recipeResult.analysis.explanations.length > 0 && (
                       <div className="recipe-page__explanations">

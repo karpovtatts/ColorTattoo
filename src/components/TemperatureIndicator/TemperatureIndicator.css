@@ -1,0 +1,90 @@
+.temperature-indicator {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs, 0.5rem);
+}
+
+.temperature-indicator__content {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs, 0.5rem);
+  padding: var(--spacing-xs, 0.5rem) var(--spacing-sm, 0.75rem);
+  border-radius: var(--radius-sm, 0.25rem);
+  font-weight: 500;
+}
+
+.temperature-indicator__content--warm {
+  background-color: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+}
+
+.temperature-indicator__content--cool {
+  background-color: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+}
+
+.temperature-indicator__content--neutral {
+  background-color: rgba(156, 163, 175, 0.1);
+  color: #9ca3af;
+}
+
+.temperature-indicator__icon {
+  font-size: 1.125rem;
+  line-height: 1;
+}
+
+.temperature-indicator__label {
+  font-size: 0.875rem;
+}
+
+.temperature-indicator--small .temperature-indicator__icon {
+  font-size: 0.875rem;
+}
+
+.temperature-indicator--small .temperature-indicator__label {
+  font-size: 0.75rem;
+}
+
+.temperature-indicator--large .temperature-indicator__icon {
+  font-size: 1.5rem;
+}
+
+.temperature-indicator--large .temperature-indicator__label {
+  font-size: 1rem;
+}
+
+.temperature-indicator__scale {
+  width: 100%;
+  max-width: 200px;
+}
+
+.temperature-indicator__scale-track {
+  position: relative;
+  height: 4px;
+  background: linear-gradient(
+    to right,
+    #3b82f6 0%,
+    #9ca3af 50%,
+    #f59e0b 100%
+  );
+  border-radius: var(--radius-sm, 0.25rem);
+  overflow: hidden;
+}
+
+.temperature-indicator__scale-marker {
+  position: absolute;
+  top: 0;
+  width: 4px;
+  height: 100%;
+  transform: translateX(-50%);
+  transition: all 0.3s ease;
+  border-radius: var(--radius-sm, 0.25rem);
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.2);
+}
+
+@media (max-width: 768px) {
+  .temperature-indicator__scale {
+    max-width: 150px;
+  }
+}
+
