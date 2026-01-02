@@ -12,6 +12,7 @@ import {
   createColorFromRgb,
   findNearestColor,
 } from '@/utils/colorOperations'
+import { analyzeColorAndRecipe } from './colorAnalysis'
 
 // Константы для алгоритма
 const MAX_INGREDIENTS = 3 // Максимальное количество ингредиентов в рецепте
@@ -175,6 +176,11 @@ export function findRecipe(
     throw new Error('В палитре должно быть минимум 2 цвета.')
   }
 
+  // Функция для получения цвета по ID из палитры
+  const getColorById = (id: string): Color | undefined => {
+    return palette.colors.find((c) => c.id === id)
+  }
+
   // Проверяем, есть ли точное совпадение в палитре
   const nearestInPalette = findNearestColor(targetColor, palette.colors)
   if (nearestInPalette.distance < EXACT_MATCH_THRESHOLD) {
@@ -193,17 +199,13 @@ export function findRecipe(
       updatedAt: new Date(),
     }
 
+    // Анализируем рецепт (даже для одного цвета)
+    const { analysis, warnings } = analyzeColorAndRecipe(recipe, getColorById)
+
     return {
       recipe,
-      analysis: {
-        isClean: true,
-        isDirty: false,
-        isWarm: false,
-        isCool: false,
-        warnings: [],
-        explanations: [],
-      },
-      warnings: [],
+      analysis,
+      warnings,
       isExactMatch: true,
       distance: nearestInPalette.distance,
     }
@@ -277,19 +279,15 @@ export function findRecipe(
     updatedAt: new Date(),
   }
 
+  // Анализируем рецепт (правила R01, R02)
+  const { analysis, warnings } = analyzeColorAndRecipe(recipe, getColorById)
+
   const isExactMatch = bestResult.distance < EXACT_MATCH_THRESHOLD
 
   return {
     recipe,
-    analysis: {
-      isClean: true, // Будет переопределено в этапе 6
-      isDirty: false,
-      isWarm: false, // Будет переопределено в этапе 7
-      isCool: false,
-      warnings: [],
-      explanations: [],
-    },
-    warnings: [], // Будет заполнено в этапе 6
+    analysis,
+    warnings,
     isExactMatch,
     distance: bestResult.distance,
   }

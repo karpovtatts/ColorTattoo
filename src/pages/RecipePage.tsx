@@ -190,7 +190,33 @@ function RecipePage() {
                   </div>
                 </div>
 
-                {/* Предупреждения (будут добавлены в этапе 6) */}
+                {/* Анализ цвета */}
+                <div className="recipe-page__analysis">
+                  <h2 className="recipe-page__section-title">Анализ цвета</h2>
+                  <div className="recipe-page__analysis-content">
+                    <div className="recipe-page__analysis-item">
+                      <span className="recipe-page__analysis-label">Чистота:</span>
+                      <span
+                        className={`recipe-page__analysis-value recipe-page__analysis-value--${
+                          recipeResult.analysis.isClean ? 'clean' : 'dirty'
+                        }`}
+                      >
+                        {recipeResult.analysis.isClean ? '✓ Чистый' : '⚠ Грязный'}
+                      </span>
+                    </div>
+                    {recipeResult.analysis.explanations.length > 0 && (
+                      <div className="recipe-page__explanations">
+                        {recipeResult.analysis.explanations.map((explanation, idx) => (
+                          <p key={idx} className="recipe-page__explanation">
+                            {explanation}
+                          </p>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Предупреждения */}
                 {recipeResult.warnings.length > 0 && (
                   <div className="recipe-page__warnings">
                     <h2 className="recipe-page__section-title">Предупреждения</h2>
