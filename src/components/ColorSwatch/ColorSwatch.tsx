@@ -8,6 +8,7 @@ interface ColorSwatchProps {
   onEdit?: (color: Color) => void
   onDelete?: (id: string) => void
   showActions?: boolean
+  size?: 'small' | 'medium' | 'large'
 }
 
 function ColorSwatch({
@@ -15,6 +16,7 @@ function ColorSwatch({
   onEdit,
   onDelete,
   showActions = true,
+  size = 'medium',
 }: ColorSwatchProps) {
   const [showTooltip, setShowTooltip] = useState(false)
 
@@ -30,7 +32,7 @@ function ColorSwatch({
 
   return (
     <div
-      className="color-swatch"
+      className={`color-swatch color-swatch--${size}`}
       onMouseEnter={() => setShowTooltip(true)}
       onMouseLeave={() => setShowTooltip(false)}
     >

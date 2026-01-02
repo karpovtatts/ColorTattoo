@@ -96,6 +96,34 @@
   font-size: 0.875rem;
 }
 
+/* Размеры */
+.color-swatch--small {
+  padding: 0.5rem;
+  gap: 0.25rem;
+}
+
+.color-swatch--small .color-swatch__preview {
+  min-width: 40px;
+  min-height: 40px;
+}
+
+.color-swatch--small .color-swatch__name {
+  font-size: 0.75rem;
+}
+
+.color-swatch--medium {
+  padding: 0.75rem;
+}
+
+.color-swatch--large {
+  padding: 1rem;
+}
+
+.color-swatch--large .color-swatch__preview {
+  min-width: 120px;
+  min-height: 120px;
+}
+
 @media (max-width: 768px) {
   .color-swatch {
     padding: 0.5rem;
