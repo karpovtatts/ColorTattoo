@@ -1,0 +1,43 @@
+.warning-badge {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--spacing-md);
+  border-left: 4px solid;
+}
+
+.warning-badge:last-child {
+  margin-bottom: 0;
+}
+
+.warning-badge__icon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.warning-badge__text {
+  font-size: 0.875rem;
+  color: var(--color-text-primary);
+  line-height: 1.5;
+  margin: 0;
+  flex: 1;
+}
+
+.warning-badge--high {
+  background-color: rgba(220, 38, 38, 0.1);
+  border-left-color: #dc2626;
+}
+
+.warning-badge--medium {
+  background-color: rgba(245, 158, 11, 0.1);
+  border-left-color: #f59e0b;
+}
+
+.warning-badge--low {
+  background-color: rgba(59, 130, 246, 0.1);
+  border-left-color: #3b82f6;
+}
+

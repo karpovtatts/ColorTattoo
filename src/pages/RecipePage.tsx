@@ -1,11 +1,17 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Container from '@/components/Container/Container'
-import { Button, ColorPreview, ColorSwatch, TemperatureIndicator } from '@/components'
+import {
+  Button,
+  ColorPreview,
+  ColorComparison,
+  RecipeDisplay,
+  WarningBadge,
+  AnalysisSection,
+} from '@/components'
 import { useColorContext } from '@/contexts/ColorContext'
 import { usePaletteContext } from '@/contexts/PaletteContext'
 import { findRecipe } from '@/services/recipeFinder'
-import { formatRecipe } from '@/utils/recipeFormatter'
 import type { RecipeResult, UnreachableColorResult } from '@/types'
 import './RecipePage.css'
 
@@ -119,108 +125,46 @@ function RecipePage() {
                 <p className="recipe-page__unreachable-explanation">
                   {recipeResult.explanation}
                 </p>
-                <div className="recipe-page__color-comparison">
-                  <div className="recipe-page__color-item">
-                    <h3 className="recipe-page__color-label">Целевой цвет</h3>
-                    <ColorPreview
-                      color={recipeResult.targetColor}
-                      size="medium"
-                      showHex
-                    />
-                  </div>
-                  <div className="recipe-page__color-item">
-                    <h3 className="recipe-page__color-label">Ближайший достижимый</h3>
-                    <ColorPreview
-                      color={recipeResult.nearestColor}
-                      size="medium"
-                      showHex
-                    />
-                  </div>
-                </div>
-                <p className="recipe-page__distance">
-                  Расстояние: {Math.round(recipeResult.distance)} единиц
-                </p>
+                <ColorComparison
+                  targetColor={recipeResult.targetColor}
+                  resultColor={recipeResult.nearestColor}
+                  showDistance
+                  showLabels
+                  size="medium"
+                />
               </div>
             ) : (
               <>
-                {/* Результирующий цвет */}
-                <div className="recipe-page__result-color">
-                  <h2 className="recipe-page__section-title">Результирующий цвет</h2>
-                  <ColorPreview
-                    color={recipeResult.recipe.resultColor}
+                {/* Сравнение цветов */}
+                <div className="recipe-page__comparison">
+                  <h2 className="recipe-page__section-title">Сравнение цветов</h2>
+                  <ColorComparison
+                    targetColor={targetColor}
+                    resultColor={recipeResult.recipe.resultColor}
+                    showDistance
+                    showLabels
                     size="large"
-                    showHex
-                    showRgb
-                    label={
-                      recipeResult.isExactMatch
-                        ? 'Точное совпадение'
-                        : `Близкое совпадение (расстояние: ${Math.round(recipeResult.distance || 0)})`
-                    }
                   />
                 </div>
 
                 {/* Рецепт */}
                 <div className="recipe-page__recipe">
                   <h2 className="recipe-page__section-title">Рецепт смешивания</h2>
-                  <p className="recipe-page__recipe-text">
-                    {formatRecipe(recipeResult.recipe, getColorById, 'parts')}
-                  </p>
-                  <div className="recipe-page__ingredients">
-                    <h3 className="recipe-page__ingredients-title">Ингредиенты:</h3>
-                    <div className="recipe-page__ingredients-list">
-                      {recipeResult.recipe.ingredients.map((ingredient) => {
-                        const color = getColorById(ingredient.colorId)
-                        if (!color) return null
-
-                        return (
-                          <div key={ingredient.colorId} className="recipe-page__ingredient">
-                            <ColorSwatch color={color} size="small" />
-                            <div className="recipe-page__ingredient-info">
-                              <span className="recipe-page__ingredient-name">
-                                {color.name || color.hex}
-                              </span>
-                              <span className="recipe-page__ingredient-proportion">
-                                {Math.round(ingredient.proportion * 100)}%
-                              </span>
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </div>
+                  <RecipeDisplay
+                    recipe={recipeResult.recipe}
+                    getColorById={getColorById}
+                    format="parts"
+                    showIngredients
+                  />
                 </div>
 
                 {/* Анализ цвета */}
                 <div className="recipe-page__analysis">
                   <h2 className="recipe-page__section-title">Анализ цвета</h2>
-                  <div className="recipe-page__analysis-content">
-                    <div className="recipe-page__analysis-item">
-                      <span className="recipe-page__analysis-label">Чистота:</span>
-                      <span
-                        className={`recipe-page__analysis-value recipe-page__analysis-value--${
-                          recipeResult.analysis.isClean ? 'clean' : 'dirty'
-                        }`}
-                      >
-                        {recipeResult.analysis.isClean ? '✓ Чистый' : '⚠ Грязный'}
-                      </span>
-                    </div>
-                    <div className="recipe-page__analysis-item">
-                      <span className="recipe-page__analysis-label">Температура:</span>
-                      <TemperatureIndicator
-                        color={recipeResult.recipe.resultColor}
-                        size="medium"
-                      />
-                    </div>
-                    {recipeResult.analysis.explanations.length > 0 && (
-                      <div className="recipe-page__explanations">
-                        {recipeResult.analysis.explanations.map((explanation, idx) => (
-                          <p key={idx} className="recipe-page__explanation">
-                            {explanation}
-                          </p>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                  <AnalysisSection
+                    analysis={recipeResult.analysis}
+                    resultColor={recipeResult.recipe.resultColor}
+                  />
                 </div>
 
                 {/* Предупреждения */}
@@ -228,12 +172,7 @@ function RecipePage() {
                   <div className="recipe-page__warnings">
                     <h2 className="recipe-page__section-title">Предупреждения</h2>
                     {recipeResult.warnings.map((warning, idx) => (
-                      <div
-                        key={idx}
-                        className={`recipe-page__warning recipe-page__warning--${warning.severity}`}
-                      >
-                        <p className="recipe-page__warning-text">{warning.message}</p>
-                      </div>
+                      <WarningBadge key={idx} warning={warning} showIcon />
                     ))}
                   </div>
                 )}

@@ -52,7 +52,7 @@
   margin-top: var(--spacing-xl);
 }
 
-.recipe-page__result-color {
+.recipe-page__comparison {
   margin-bottom: var(--spacing-xl);
   padding: var(--spacing-lg);
   background-color: var(--color-bg-secondary);
@@ -66,123 +66,9 @@
   border-radius: var(--radius-lg);
 }
 
-.recipe-page__recipe-text {
-  font-size: 1.125rem;
-  color: var(--color-text-primary);
-  margin-bottom: var(--spacing-md);
-  line-height: 1.6;
-}
-
-.recipe-page__ingredients {
-  margin-top: var(--spacing-lg);
-}
-
-.recipe-page__ingredients-title {
-  font-size: 1rem;
-  font-weight: 600;
-  margin-bottom: var(--spacing-md);
-  color: var(--color-text-primary);
-}
-
-.recipe-page__ingredients-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-md);
-}
-
-.recipe-page__ingredient {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-md);
-  padding: var(--spacing-md);
-  background-color: var(--color-bg-primary);
-  border-radius: var(--radius-md);
-}
-
-.recipe-page__ingredient-info {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-xs);
-  flex: 1;
-}
-
-.recipe-page__ingredient-name {
-  font-size: 0.875rem;
-  color: var(--color-text-primary);
-  font-weight: 500;
-}
-
-.recipe-page__ingredient-proportion {
-  font-size: 0.75rem;
-  color: var(--color-text-secondary);
-}
-
 .recipe-page__analysis {
   margin-top: var(--spacing-xl);
   margin-bottom: var(--spacing-xl);
-  padding: var(--spacing-lg);
-  background-color: var(--color-bg-secondary);
-  border-radius: var(--radius-lg);
-}
-
-.recipe-page__analysis-content {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-md);
-}
-
-.recipe-page__analysis-item {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-md);
-  padding: var(--spacing-md);
-  background-color: var(--color-bg-primary);
-  border-radius: var(--radius-md);
-}
-
-.recipe-page__analysis-item .temperature-indicator {
-  flex: 1;
-}
-
-.recipe-page__analysis-label {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--color-text-primary);
-}
-
-.recipe-page__analysis-value {
-  font-size: 0.875rem;
-  font-weight: 500;
-  padding: var(--spacing-xs) var(--spacing-sm);
-  border-radius: var(--radius-sm);
-}
-
-.recipe-page__analysis-value--clean {
-  background-color: rgba(34, 197, 94, 0.1);
-  color: #22c55e;
-}
-
-.recipe-page__analysis-value--dirty {
-  background-color: rgba(220, 38, 38, 0.1);
-  color: #dc2626;
-}
-
-.recipe-page__explanations {
-  margin-top: var(--spacing-md);
-  padding: var(--spacing-md);
-  background-color: var(--color-bg-primary);
-  border-radius: var(--radius-md);
-}
-
-.recipe-page__explanation {
-  font-size: 0.875rem;
-  color: var(--color-text-secondary);
-  line-height: 1.6;
-  margin-bottom: var(--spacing-sm);
-}
-
-.recipe-page__explanation:last-child {
-  margin-bottom: 0;
 }
 
 .recipe-page__warnings {
@@ -190,33 +76,6 @@
   padding: var(--spacing-lg);
   background-color: var(--color-bg-secondary);
   border-radius: var(--radius-lg);
-}
-
-.recipe-page__warning {
-  padding: var(--spacing-md);
-  border-radius: var(--radius-md);
-  margin-bottom: var(--spacing-md);
-}
-
-.recipe-page__warning--high {
-  background-color: rgba(220, 38, 38, 0.1);
-  border-left: 4px solid #dc2626;
-}
-
-.recipe-page__warning--medium {
-  background-color: rgba(245, 158, 11, 0.1);
-  border-left: 4px solid #f59e0b;
-}
-
-.recipe-page__warning--low {
-  background-color: rgba(59, 130, 246, 0.1);
-  border-left: 4px solid #3b82f6;
-}
-
-.recipe-page__warning-text {
-  font-size: 0.875rem;
-  color: var(--color-text-primary);
-  line-height: 1.5;
 }
 
 .recipe-page__unreachable {
@@ -233,31 +92,6 @@
   line-height: 1.6;
 }
 
-.recipe-page__color-comparison {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: var(--spacing-lg);
-  margin-bottom: var(--spacing-lg);
-}
-
-.recipe-page__color-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--spacing-md);
-}
-
-.recipe-page__color-label {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--color-text-primary);
-}
-
-.recipe-page__distance {
-  font-size: 0.875rem;
-  color: var(--color-text-secondary);
-  text-align: center;
-}
 
 .recipe-page__error {
   padding: var(--spacing-lg);

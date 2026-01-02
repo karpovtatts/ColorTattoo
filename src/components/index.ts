@@ -11,4 +11,8 @@ export { default as ColorPicker } from './ColorPicker/ColorPicker'
 export { default as ColorSwatch } from './ColorSwatch/ColorSwatch'
 export { default as TemperatureIndicator } from './TemperatureIndicator/TemperatureIndicator'
 export { default as AddColorModal } from './AddColorModal/AddColorModal'
+export { default as ColorComparison } from './ColorComparison/ColorComparison'
+export { default as RecipeDisplay } from './RecipeDisplay/RecipeDisplay'
+export { default as WarningBadge } from './WarningBadge/WarningBadge'
+export { default as AnalysisSection } from './AnalysisSection/AnalysisSection'
 
