@@ -1,0 +1,65 @@
+.color-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.color-preview__label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.color-preview__swatch {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: var(--radius-md);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--color-border);
+  transition: all 0.2s;
+}
+
+.color-preview__swatch:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+}
+
+.color-preview__swatch--empty {
+  background: repeating-linear-gradient(
+    45deg,
+    var(--color-bg-secondary),
+    var(--color-bg-secondary) 10px,
+    var(--color-bg-primary) 10px,
+    var(--color-bg-primary) 20px
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.color-preview__empty-text {
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+}
+
+.color-preview__code {
+  font-family: 'Courier New', monospace;
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+/* Размеры */
+.color-preview--small .color-preview__swatch {
+  max-width: 80px;
+}
+
+.color-preview--medium .color-preview__swatch {
+  max-width: 120px;
+}
+
+.color-preview--large .color-preview__swatch {
+  max-width: 200px;
+}
+

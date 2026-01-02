@@ -1,0 +1,33 @@
+.rgb-input {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.rgb-input__label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.rgb-input__fields {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--spacing-sm);
+}
+
+.rgb-input__field {
+  display: flex;
+  flex-direction: column;
+}
+
+.rgb-input__input {
+  width: 100%;
+}
+
+@media (max-width: 640px) {
+  .rgb-input__fields {
+    grid-template-columns: 1fr;
+  }
+}
+

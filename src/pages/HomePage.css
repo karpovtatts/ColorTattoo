@@ -1,5 +1,4 @@
 .home-page {
-  text-align: center;
   padding: var(--spacing-xl) 0;
 }
 
@@ -8,26 +7,65 @@
   font-weight: 700;
   margin-bottom: var(--spacing-md);
   color: var(--color-text-primary);
+  text-align: center;
 }
 
 .home-page__subtitle {
   font-size: 1.25rem;
   color: var(--color-text-secondary);
   margin-bottom: var(--spacing-xl);
+  text-align: center;
 }
 
-.home-page__content {
+.home-page__form {
   max-width: 600px;
   margin: 0 auto;
-  text-align: left;
-  padding: var(--spacing-lg);
+  padding: var(--spacing-xl);
   background-color: var(--color-bg-secondary);
   border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl);
 }
 
-.home-page__content p {
+.home-page__form-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
   margin-bottom: var(--spacing-md);
-  line-height: 1.8;
+  text-align: center;
+}
+
+.home-page__color-picker-section {
+  display: flex;
+  justify-content: center;
+}
+
+.home-page__preview-section {
+  display: flex;
+  justify-content: center;
+}
+
+.home-page__inputs-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.home-page__input-group {
+  width: 100%;
+}
+
+.home-page__actions {
+  display: flex;
+  gap: var(--spacing-md);
+}
+
+.home-page__hint {
+  text-align: center;
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+  margin-top: calc(-1 * var(--spacing-lg));
 }
 
 @media (max-width: 768px) {
@@ -38,5 +76,8 @@
   .home-page__subtitle {
     font-size: 1rem;
   }
-}
 
+  .home-page__form {
+    padding: var(--spacing-lg);
+  }
+}

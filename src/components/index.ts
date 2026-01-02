@@ -4,4 +4,8 @@ export { default as Input } from './Input/Input'
 export { default as Container } from './Container/Container'
 export { default as Layout } from './Layout/Layout'
 export { default as Navigation } from './Navigation/Navigation'
+export { default as ColorInput } from './ColorInput/ColorInput'
+export { default as RGBInput } from './RGBInput/RGBInput'
+export { default as ColorPreview } from './ColorPreview/ColorPreview'
+export { default as ColorPicker } from './ColorPicker/ColorPicker'
 
