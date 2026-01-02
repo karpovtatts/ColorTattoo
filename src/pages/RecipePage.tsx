@@ -8,10 +8,12 @@ import {
   RecipeDisplay,
   WarningBadge,
   AnalysisSection,
+  SaveRecipeModal,
 } from '@/components'
 import { useColorContext } from '@/contexts/ColorContext'
 import { usePaletteContext } from '@/contexts/PaletteContext'
 import { findRecipe } from '@/services/recipeFinder'
+import { saveRecipe, createSavedRecipe } from '@/services/recipeStorage'
 import type { RecipeResult, UnreachableColorResult } from '@/types'
 import './RecipePage.css'
 
@@ -24,6 +26,7 @@ function RecipePage() {
   >(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isSaveModalOpen, setIsSaveModalOpen] = useState(false)
 
   // Подбор рецепта при изменении целевого цвета или палитры
   useEffect(() => {
@@ -56,6 +59,22 @@ function RecipePage() {
   // Функция для получения цвета по ID
   const getColorById = (id: string) => {
     return palette.colors.find((c) => c.id === id)
+  }
+
+  // Обработка сохранения рецепта
+  const handleSaveRecipe = (name: string, notes: string) => {
+    if (!recipeResult || 'explanation' in recipeResult) {
+      return
+    }
+
+    try {
+      const savedRecipe = createSavedRecipe(recipeResult.recipe, name, notes)
+      saveRecipe(savedRecipe)
+      setIsSaveModalOpen(false)
+      // Можно добавить уведомление об успешном сохранении
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Ошибка при сохранении рецепта')
+    }
   }
 
   if (!targetColor) {
@@ -176,11 +195,31 @@ function RecipePage() {
                     ))}
                   </div>
                 )}
+
+                {/* Кнопка сохранения */}
+                <div className="recipe-page__actions">
+                  <Button
+                    variant="primary"
+                    onClick={() => setIsSaveModalOpen(true)}
+                  >
+                    Сохранить рецепт
+                  </Button>
+                </div>
               </>
             )}
           </div>
         )}
       </div>
+
+      {/* Модальное окно сохранения */}
+      {recipeResult && !('explanation' in recipeResult) && (
+        <SaveRecipeModal
+          isOpen={isSaveModalOpen}
+          onClose={() => setIsSaveModalOpen(false)}
+          onSave={handleSaveRecipe}
+          recipe={recipeResult.recipe}
+        />
+      )}
     </Container>
   )
 }

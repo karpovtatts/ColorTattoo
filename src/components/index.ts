@@ -15,4 +15,6 @@ export { default as ColorComparison } from './ColorComparison/ColorComparison'
 export { default as RecipeDisplay } from './RecipeDisplay/RecipeDisplay'
 export { default as WarningBadge } from './WarningBadge/WarningBadge'
 export { default as AnalysisSection } from './AnalysisSection/AnalysisSection'
+export { default as SaveRecipeModal } from './SaveRecipeModal/SaveRecipeModal'
+export { default as RecipeCard } from './RecipeCard/RecipeCard'
 

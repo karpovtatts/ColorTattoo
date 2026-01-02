@@ -35,6 +35,12 @@ export interface Recipe {
   updatedAt: Date
 }
 
+// Сохраненный рецепт с дополнительными полями
+export interface SavedRecipe extends Recipe {
+  name?: string // Название рецепта
+  // notes уже есть в Recipe
+}
+
 // Палитра пользователя
 export interface UserPalette {
   colors: Color[]
