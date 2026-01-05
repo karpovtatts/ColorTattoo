@@ -110,14 +110,14 @@ export function analyzeBlackUsage(
   // Если черный найден в рецепте для цветного целевого цвета
   if (blackIngredient && blackColor) {
     const proportion = blackIngredient.proportion
-    const severity: 'low' | 'medium' | 'high' =
-      proportion > 0.3 ? 'high' : proportion > 0.15 ? 'medium' : 'low'
+    // Всегда высокий приоритет - смешивание с черным всегда дает грязь
+    const severity: 'low' | 'medium' | 'high' = 'high'
 
     return {
       hasBlackIssue: true,
       warning: {
         type: 'black_usage',
-        message: `Использование черного (${Math.round(proportion * 100)}%) для затемнения цветных оттенков загрязняет цвет. В коже это может выглядеть грязно.`,
+        message: `⚠️ Смешивание с черным (${Math.round(proportion * 100)}%) дает грязь. Заживший оттенок в коже будет грязным. Черный не затемняет цветные оттенки, а загрязняет их.`,
         severity,
       },
       alternative:
@@ -326,7 +326,7 @@ export function analyzeColorAndRecipe(
 
   if (blackAnalysis.hasBlackIssue) {
     explanations.push(
-      `Использование черного для затемнения цветных оттенков не рекомендуется, так как черный загрязняет цвет вместо затемнения.`
+      `⚠️ ВНИМАНИЕ: Смешивание с любым черным дает грязь. Заживший оттенок в коже будет грязным. Черный не затемняет цветные оттенки, а загрязняет их.`
     )
     if (blackAnalysis.alternative) {
       explanations.push(blackAnalysis.alternative)

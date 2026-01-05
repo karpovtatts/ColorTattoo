@@ -29,6 +29,25 @@
   color: var(--color-text-primary);
 }
 
+.recipe-page__info-note {
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+  background-color: rgba(59, 130, 246, 0.1);
+  border-left: 4px solid #3b82f6;
+  border-radius: var(--radius-md);
+}
+
+.recipe-page__info-note p {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.recipe-page__info-note strong {
+  color: var(--color-text-primary);
+}
+
 .recipe-page__content {
   padding: var(--spacing-lg);
   background-color: var(--color-bg-secondary);

@@ -1,4 +1,4 @@
-import type { RGB, HSL } from '../types'
+import type { RGB, HSL, CMYK, LAB } from '../types'
 
 /**
  * Конвертация RGB в HSL
@@ -247,5 +247,202 @@ export function parseRgbString(rgbString: string): RGB {
   }
 
   return normalizeRgb({ r: parts[0], g: parts[1], b: parts[2] })
+}
+
+/**
+ * Конвертация RGB в CMYK (субтрактивная модель для печати/красок)
+ * @param rgb - RGB значения (0-255)
+ * @returns CMYK значения (0-100)
+ */
+export function rgbToCmyk(rgb: RGB): CMYK {
+  // Нормализуем RGB к 0-1
+  const r = rgb.r / 255
+  const g = rgb.g / 255
+  const b = rgb.b / 255
+
+  // Вычисляем K (черный)
+  const k = 1 - Math.max(r, g, b)
+
+  // Если K = 1, цвет полностью черный
+  if (k === 1) {
+    return { c: 0, m: 0, y: 0, k: 100 }
+  }
+
+  // Вычисляем C, M, Y
+  const c = ((1 - r - k) / (1 - k)) * 100
+  const m = ((1 - g - k) / (1 - k)) * 100
+  const y = ((1 - b - k) / (1 - k)) * 100
+
+  return {
+    c: Math.max(0, Math.min(100, Math.round(c))),
+    m: Math.max(0, Math.min(100, Math.round(m))),
+    y: Math.max(0, Math.min(100, Math.round(y))),
+    k: Math.max(0, Math.min(100, Math.round(k * 100))),
+  }
+}
+
+/**
+ * Конвертация CMYK в RGB
+ * @param cmyk - CMYK значения (0-100)
+ * @returns RGB значения (0-255)
+ */
+export function cmykToRgb(cmyk: CMYK): RGB {
+  // Нормализуем CMYK к 0-1
+  const c = cmyk.c / 100
+  const m = cmyk.m / 100
+  const y = cmyk.y / 100
+  const k = cmyk.k / 100
+
+  // Конвертируем в RGB
+  const r = (1 - Math.min(1, c * (1 - k) + k)) * 255
+  const g = (1 - Math.min(1, m * (1 - k) + k)) * 255
+  const b = (1 - Math.min(1, y * (1 - k) + k)) * 255
+
+  return normalizeRgb({
+    r: Math.round(r),
+    g: Math.round(g),
+    b: Math.round(b),
+  })
+}
+
+/**
+ * Конвертация RGB в XYZ (промежуточное пространство для LAB)
+ * @param rgb - RGB значения (0-255)
+ * @returns XYZ значения
+ */
+function rgbToXyz(rgb: RGB): { x: number; y: number; z: number } {
+  // Нормализуем RGB к 0-1 и применяем гамма-коррекцию
+  const normalize = (value: number) => {
+    const v = value / 255
+    return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)
+  }
+
+  const r = normalize(rgb.r)
+  const g = normalize(rgb.g)
+  const b = normalize(rgb.b)
+
+  // Используем стандартную матрицу sRGB -> XYZ (D65 white point)
+  const x = r * 0.4124564 + g * 0.3575761 + b * 0.1804375
+  const y = r * 0.2126729 + g * 0.7151522 + b * 0.072175
+  const z = r * 0.0193339 + g * 0.119192 + b * 0.9503041
+
+  return { x, y, z }
+}
+
+/**
+ * Конвертация XYZ в LAB
+ * @param xyz - XYZ значения
+ * @returns LAB значения
+ */
+function xyzToLab(xyz: { x: number; y: number; z: number }): LAB {
+  // D65 white point (стандартный источник света)
+  const xn = 0.95047
+  const yn = 1.0
+  const zn = 1.08883
+
+  // Нормализуем относительно белой точки
+  const fx = xyz.x / xn
+  const fy = xyz.y / yn
+  const fz = xyz.z / zn
+
+  // Функция f для LAB
+  const f = (t: number) => {
+    const delta = 6 / 29
+    if (t > delta * delta * delta) {
+      return Math.pow(t, 1 / 3)
+    }
+    return t / (3 * delta * delta) + 4 / 29
+  }
+
+  const l = 116 * f(fy) - 16
+  const a = 500 * (f(fx) - f(fy))
+  const b = 200 * (f(fy) - f(fz))
+
+  return {
+    l: Math.max(0, Math.min(100, l)),
+    a: Math.max(-128, Math.min(127, a)),
+    b: Math.max(-128, Math.min(127, b)),
+  }
+}
+
+/**
+ * Конвертация LAB в XYZ
+ * @param lab - LAB значения
+ * @returns XYZ значения
+ */
+function labToXyz(lab: LAB): { x: number; y: number; z: number } {
+  // D65 white point
+  const xn = 0.95047
+  const yn = 1.0
+  const zn = 1.08883
+
+  // Обратная функция f для LAB
+  const fInv = (t: number) => {
+    const delta = 6 / 29
+    if (t > delta) {
+      return t * t * t
+    }
+    return 3 * delta * delta * (t - 4 / 29)
+  }
+
+  const fy = (lab.l + 16) / 116
+  const fx = lab.a / 500 + fy
+  const fz = fy - lab.b / 200
+
+  const x = fInv(fx) * xn
+  const y = fInv(fy) * yn
+  const z = fInv(fz) * zn
+
+  return { x, y, z }
+}
+
+/**
+ * Конвертация XYZ в RGB
+ * @param xyz - XYZ значения
+ * @returns RGB значения (0-255)
+ */
+function xyzToRgb(xyz: { x: number; y: number; z: number }): RGB {
+  // Матрица XYZ -> sRGB (D65)
+  let r = xyz.x * 3.2404542 + xyz.y * -1.5371385 + xyz.z * -0.4985314
+  let g = xyz.x * -0.969266 + xyz.y * 1.8760108 + xyz.z * 0.041556
+  let b = xyz.x * 0.0556434 + xyz.y * -0.2040259 + xyz.z * 1.0572252
+
+  // Обратная гамма-коррекция
+  const gammaCorrection = (value: number) => {
+    if (value <= 0.0031308) {
+      return 12.92 * value
+    }
+    return 1.055 * Math.pow(value, 1 / 2.4) - 0.055
+  }
+
+  r = gammaCorrection(r) * 255
+  g = gammaCorrection(g) * 255
+  b = gammaCorrection(b) * 255
+
+  return normalizeRgb({
+    r: Math.round(r),
+    g: Math.round(g),
+    b: Math.round(b),
+  })
+}
+
+/**
+ * Конвертация RGB в LAB (через XYZ)
+ * @param rgb - RGB значения (0-255)
+ * @returns LAB значения
+ */
+export function rgbToLab(rgb: RGB): LAB {
+  const xyz = rgbToXyz(rgb)
+  return xyzToLab(xyz)
+}
+
+/**
+ * Конвертация LAB в RGB (через XYZ)
+ * @param lab - LAB значения
+ * @returns RGB значения (0-255)
+ */
+export function labToRgb(lab: LAB): RGB {
+  const xyz = labToXyz(lab)
+  return xyzToRgb(xyz)
 }
 

@@ -11,12 +11,26 @@ export interface HSL {
   l: number // 0-100
 }
 
+export interface CMYK {
+  c: number // 0-100
+  m: number // 0-100
+  y: number // 0-100
+  k: number // 0-100
+}
+
+export interface LAB {
+  l: number // 0-100 (Lightness)
+  a: number // -128 to 127 (green-red axis)
+  b: number // -128 to 127 (blue-yellow axis)
+}
+
 export interface Color {
   id: string
   name?: string
   rgb: RGB
   hsl: HSL
   hex: string
+  lab?: LAB // Кэшированные значения LAB для оптимизации
 }
 
 // Рецепт смешивания

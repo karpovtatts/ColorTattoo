@@ -1,6 +1,6 @@
 import type { Color } from '@/types'
 import { ColorPreview } from '@/components'
-import { calculateColorDistanceFull } from '@/utils/colorOperations'
+import { calculateColorDistancePerceptualFull } from '@/utils/colorMetric'
 import './ColorComparison.css'
 
 interface ColorComparisonProps {
@@ -18,8 +18,8 @@ function ColorComparison({
   showLabels = true,
   size = 'medium',
 }: ColorComparisonProps) {
-  const distance = calculateColorDistanceFull(targetColor, resultColor)
-  const isExactMatch = distance < 5
+  const distance = calculateColorDistancePerceptualFull(targetColor, resultColor)
+  const isExactMatch = distance < 2 // DeltaE < 2 считается неразличимым для глаза
 
   return (
     <div className={`color-comparison color-comparison--${size}`}>
@@ -61,7 +61,7 @@ function ColorComparison({
           >
             {isExactMatch
               ? 'Точное совпадение'
-              : `Расстояние: ${Math.round(distance)} единиц`}
+              : `DeltaE: ${distance.toFixed(2)}`}
           </span>
         </div>
       )}
