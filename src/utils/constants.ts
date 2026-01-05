@@ -12,6 +12,7 @@ export const ROUTES = {
   PALETTE: '/palette',
   RECIPE: '/recipe',
   SAVED: '/saved',
+  IMAGE_ANALYSIS: '/image-analysis',
 } as const
 
 export const COLOR_FORMATS = {

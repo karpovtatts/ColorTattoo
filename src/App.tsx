@@ -8,6 +8,7 @@ import HomePage from './pages/HomePage'
 import PalettePage from './pages/PalettePage'
 import RecipePage from './pages/RecipePage'
 import SavedRecipesPage from './pages/SavedRecipesPage'
+import ImageAnalysisPage from './pages/ImageAnalysisPage'
 import './App.css'
 
 function AppContent() {
@@ -22,6 +23,7 @@ function AppContent() {
             <Route path="/palette" element={<PalettePage />} />
             <Route path="/recipe" element={<RecipePage />} />
             <Route path="/saved" element={<SavedRecipesPage />} />
+            <Route path="/image-analysis" element={<ImageAnalysisPage />} />
           </Routes>
         </Layout>
       </Router>

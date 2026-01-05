@@ -43,8 +43,6 @@ export function getDefaultPalette(): UserPalette {
     createColorFromHex('#FF0000', 'red-1', 'Красный'),
     createColorFromHex('#0000FF', 'blue-1', 'Синий'),
     createColorFromHex('#FFFF00', 'yellow-1', 'Жёлтый'),
-    createColorFromHex('#FFFFFF', 'white-1', 'Белый'),
-    createColorFromHex('#000000', 'black-1', 'Чёрный'),
   ]
 
   return {

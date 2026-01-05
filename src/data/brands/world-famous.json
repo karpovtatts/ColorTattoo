@@ -1,0 +1,63 @@
+[
+  {
+    "id": "wf-red-1",
+    "name": "Paul Rogers Red",
+    "brand": "World Famous",
+    "hex": "#CC0000"
+  },
+  {
+    "id": "wf-red-2",
+    "name": "True Red",
+    "brand": "World Famous",
+    "hex": "#DC143C"
+  },
+  {
+    "id": "wf-orange-1",
+    "name": "Bright Orange",
+    "brand": "World Famous",
+    "hex": "#FF6600"
+  },
+  {
+    "id": "wf-yellow-1",
+    "name": "Lemon Yellow",
+    "brand": "World Famous",
+    "hex": "#FFD700"
+  },
+  {
+    "id": "wf-green-1",
+    "name": "Forest Green",
+    "brand": "World Famous",
+    "hex": "#228B22"
+  },
+  {
+    "id": "wf-blue-1",
+    "name": "True Blue",
+    "brand": "World Famous",
+    "hex": "#0000CD"
+  },
+  {
+    "id": "wf-purple-1",
+    "name": "Royal Purple",
+    "brand": "World Famous",
+    "hex": "#663399"
+  },
+  {
+    "id": "wf-black-1",
+    "name": "True Black",
+    "brand": "World Famous",
+    "hex": "#000000"
+  },
+  {
+    "id": "wf-white-1",
+    "name": "Pure White",
+    "brand": "World Famous",
+    "hex": "#FFFFFF"
+  },
+  {
+    "id": "wf-brown-1",
+    "name": "Sienna Brown",
+    "brand": "World Famous",
+    "hex": "#8B4513"
+  }
+]
+

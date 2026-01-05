@@ -47,6 +47,14 @@ function Navigation() {
               Сохранённые
             </Link>
           </li>
+          <li>
+            <Link
+              to="/image-analysis"
+              className={`navigation__link ${isActive('/image-analysis') ? 'navigation__link--active' : ''}`}
+            >
+              Анализ изображения
+            </Link>
+          </li>
         </ul>
       </div>
     </nav>

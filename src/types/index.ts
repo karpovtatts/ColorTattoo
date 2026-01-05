@@ -80,3 +80,20 @@ export interface UnreachableColorResult {
   explanation: string
 }
 
+// Брендовая краска производителя
+export interface BrandInk {
+  id: string
+  name: string
+  brand: 'World Famous' | 'Limitless' | 'Other'
+  hex: string
+  // Ссылка на изображение бутылочки (опционально)
+  imageUrl?: string
+}
+
+// Результат анализа изображения
+export interface AnalysisResult {
+  originalColor: string // HEX найденного на фото цвета
+  matchedInk: BrandInk // Подобранная краска
+  distance: number // Точность совпадения (чем меньше, тем лучше)
+}
+

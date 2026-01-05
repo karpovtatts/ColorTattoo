@@ -1,0 +1,63 @@
+[
+  {
+    "id": "lim-red-1",
+    "name": "Crimson Red",
+    "brand": "Limitless",
+    "hex": "#DC143C"
+  },
+  {
+    "id": "lim-red-2",
+    "name": "Scarlet Red",
+    "brand": "Limitless",
+    "hex": "#FF2400"
+  },
+  {
+    "id": "lim-orange-1",
+    "name": "Tangerine Orange",
+    "brand": "Limitless",
+    "hex": "#FF8C00"
+  },
+  {
+    "id": "lim-yellow-1",
+    "name": "Sunshine Yellow",
+    "brand": "Limitless",
+    "hex": "#FFD700"
+  },
+  {
+    "id": "lim-green-1",
+    "name": "Emerald Green",
+    "brand": "Limitless",
+    "hex": "#50C878"
+  },
+  {
+    "id": "lim-blue-1",
+    "name": "Sky Blue",
+    "brand": "Limitless",
+    "hex": "#87CEEB"
+  },
+  {
+    "id": "lim-blue-2",
+    "name": "Navy Blue",
+    "brand": "Limitless",
+    "hex": "#000080"
+  },
+  {
+    "id": "lim-purple-1",
+    "name": "Violet Purple",
+    "brand": "Limitless",
+    "hex": "#8A2BE2"
+  },
+  {
+    "id": "lim-black-1",
+    "name": "Jet Black",
+    "brand": "Limitless",
+    "hex": "#000000"
+  },
+  {
+    "id": "lim-white-1",
+    "name": "Snow White",
+    "brand": "Limitless",
+    "hex": "#FFFFFF"
+  }
+]
+
