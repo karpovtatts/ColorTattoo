@@ -1,10 +1,11 @@
-import type { RGB, HSL, Color, RecipeIngredient } from '../types'
+import type { RGB, HSL, LAB, Color, RecipeIngredient } from '../types'
 import {
   rgbToHsl,
   hslToRgb,
   normalizeRgb,
   hexToRgb,
   rgbToHex,
+  rgbToLab,
 } from './colorConversions'
 
 /**
@@ -227,6 +228,7 @@ export function createColorFromRgb(
   const normalizedRgb = normalizeRgb(rgb)
   const hsl = rgbToHsl(normalizedRgb)
   const hex = rgbToHex(normalizedRgb)
+  const lab = rgbToLab(normalizedRgb)
 
   return {
     id: id || `color-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -234,6 +236,7 @@ export function createColorFromRgb(
     rgb: normalizedRgb,
     hsl,
     hex,
+    lab,
   }
 }
 
@@ -327,5 +330,109 @@ export function getColorNameFromHue(hue: number): string {
   } else {
     return 'красно-фиолетовый'
   }
+}
+
+/**
+ * Вычисление Delta E (CIE2000) - перцептивного различия между двумя цветами в LAB пространстве.
+ * Чем меньше значение, тем более похожи цвета визуально.
+ * 
+ * Пороги для интерпретации:
+ * - < 1: Неразличимо человеческим глазом
+ * - 1-2: Очень близкие цвета
+ * - 2-10: Похожие цвета
+ * - 10-20: Заметно разные цвета
+ * - > 20: Очень разные цвета
+ * 
+ * @param lab1 - LAB значения первого цвета
+ * @param lab2 - LAB значения второго цвета
+ * @returns Delta E значение (чем меньше, тем ближе цвета)
+ */
+export function deltaE(lab1: LAB, lab2: LAB): number {
+  const K_L = 1
+  const K_C = 1
+  const K_H = 1
+
+  const C1 = Math.sqrt(lab1.a * lab1.a + lab1.b * lab1.b)
+  const C2 = Math.sqrt(lab2.a * lab2.a + lab2.b * lab2.b)
+
+  const delta_L_prime = lab2.l - lab1.l
+
+  const C_bar = (C1 + C2) / 2
+
+  const G =
+    0.5 *
+    (1 -
+      Math.sqrt(
+        Math.pow(C_bar, 7) / (Math.pow(C_bar, 7) + Math.pow(25, 7))
+      ))
+
+  const a1_prime = (1 + G) * lab1.a
+  const a2_prime = (1 + G) * lab2.a
+
+  const C1_prime = Math.sqrt(a1_prime * a1_prime + lab1.b * lab1.b)
+  const C2_prime = Math.sqrt(a2_prime * a2_prime + lab2.b * lab2.b)
+
+  const delta_C_prime = C2_prime - C1_prime
+
+  let h1_prime = Math.atan2(lab1.b, a1_prime) * (180 / Math.PI)
+  if (h1_prime < 0) h1_prime += 360
+
+  let h2_prime = Math.atan2(lab2.b, a2_prime) * (180 / Math.PI)
+  if (h2_prime < 0) h2_prime += 360
+
+  let delta_h_prime = 0
+  if (C1_prime * C2_prime !== 0) {
+    const diff = Math.abs(h1_prime - h2_prime)
+    if (diff <= 180) {
+      delta_h_prime = h2_prime - h1_prime
+    } else if (h2_prime <= h1_prime) {
+      delta_h_prime = h2_prime - h1_prime + 360
+    } else {
+      delta_h_prime = h2_prime - h1_prime - 360
+    }
+  }
+
+  const delta_H_prime =
+    2 *
+    Math.sqrt(C1_prime * C2_prime) *
+    Math.sin((delta_h_prime * Math.PI) / 180 / 2)
+
+  const H_bar_prime =
+    Math.abs(h1_prime - h2_prime) > 180
+      ? (h1_prime + h2_prime + 360) / 2
+      : (h1_prime + h2_prime) / 2
+
+  const T =
+    1 -
+    0.17 * Math.cos(((H_bar_prime - 30) * Math.PI) / 180) +
+    0.24 * Math.cos((2 * H_bar_prime * Math.PI) / 180) +
+    0.32 * Math.cos(((3 * H_bar_prime + 6) * Math.PI) / 180) -
+    0.2 * Math.cos(((4 * H_bar_prime - 63) * Math.PI) / 180)
+
+  const S_L =
+    1 +
+    (0.015 * Math.pow(lab1.l - 50, 2)) /
+      Math.sqrt(20 + Math.pow(lab1.l - 50, 2))
+  const S_C = 1 + 0.045 * C_bar
+  const S_H = 1 + 0.015 * C_bar * T
+
+  const R_T =
+    -2 *
+    Math.sqrt(Math.pow(C_bar, 7) / (Math.pow(C_bar, 7) + Math.pow(25, 7))) *
+    Math.sin(
+      ((60 * Math.exp(-Math.pow((H_bar_prime - 275) / 25, 2))) * Math.PI) /
+        180
+    )
+
+  const L_term = delta_L_prime / (K_L * S_L)
+  const C_term = delta_C_prime / (K_C * S_C)
+  const H_term = delta_H_prime / (K_H * S_H)
+
+  return Math.sqrt(
+    L_term * L_term +
+      C_term * C_term +
+      H_term * H_term +
+      R_T * C_term * H_term
+  )
 }
 
