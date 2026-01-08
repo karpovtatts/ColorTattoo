@@ -2,7 +2,7 @@ import type { Color, Recipe, RecipeIngredient, Warning, ColorAnalysis } from '@/
 import {
   calculateSaturation,
   calculateLightness,
-  isBlackColor,
+  isBlackInk,
   isColorful,
   isGrayColor,
 } from '@/utils/colorOperations'
@@ -100,7 +100,7 @@ export function analyzeBlackUsage(
 
   for (const ingredient of recipe.ingredients) {
     const color = getColorById(ingredient.colorId)
-    if (color && isBlackColor(color)) {
+    if (color && isBlackInk(color)) {
       blackIngredient = ingredient
       blackColor = color
       break

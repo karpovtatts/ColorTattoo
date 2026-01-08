@@ -143,12 +143,41 @@ export function findNearestColor(
 
 /**
  * Проверка, является ли цвет "черным" (очень темный)
+ * Улучшенная версия: проверяет и яркость, и насыщенность, чтобы отличить
+ * черный пигмент от темно-красного или темно-синего
  * @param color - Цвет для проверки
- * @param threshold - Порог яркости (по умолчанию 30)
- * @returns true если цвет считается черным
+ * @param lightnessThreshold - Порог яркости (по умолчанию 15)
+ * @param saturationThreshold - Порог насыщенности (по умолчанию 5)
+ * @returns true если цвет считается черным пигментом
  */
-export function isBlackColor(color: Color, threshold: number = 30): boolean {
-  return color.hsl.l < threshold
+export function isBlackColor(
+  color: Color,
+  lightnessThreshold: number = 15,
+  saturationThreshold: number = 5
+): boolean {
+  // Черным пигментом считаем цвет, у которого:
+  // 1. Очень низкая яркость (L < 15) И
+  // 2. Насыщенность близка к нулю (S < 5)
+  // Это отличит "Черную краску" от "Темно-бордовой" или "Темно-синей"
+  
+  // Также проверяем название цвета - если содержит "black" (case-insensitive),
+  // считаем его черным независимо от значений
+  const nameLower = color.name?.toLowerCase() || ''
+  if (nameLower.includes('black') || nameLower.includes('чёрный') || nameLower.includes('черный')) {
+    return true
+  }
+  
+  return color.hsl.l < lightnessThreshold && color.hsl.s < saturationThreshold
+}
+
+/**
+ * Проверка, является ли цвет черным пигментом (алиас для isBlackColor с улучшенными параметрами)
+ * Используется для фильтрации палитры при поиске рецептов
+ * @param color - Цвет для проверки
+ * @returns true если цвет считается черным пигментом
+ */
+export function isBlackInk(color: Color): boolean {
+  return isBlackColor(color, 15, 5)
 }
 
 /**
@@ -238,5 +267,65 @@ export function createColorFromHex(
 ): Color {
   const rgb = hexToRgb(hex)
   return createColorFromRgb(rgb, id, name)
+}
+
+/**
+ * Расчет комплементарного цвета (противоположного на цветовом круге)
+ * Комплементарный цвет получается сдвигом HUE на 180 градусов
+ * Используется для затемнения цветных оттенков без использования черного
+ * @param color - Исходный цвет
+ * @returns Комплементарный цвет (HSL)
+ */
+export function getComplementaryColor(color: Color): HSL {
+  // Сдвигаем HUE на 180 градусов
+  let complementaryHue = (color.hsl.h + 180) % 360
+  
+  // Сохраняем насыщенность и яркость (или можно скорректировать для лучшего затемнения)
+  // Для затемнения обычно нужна средняя/высокая насыщенность
+  const complementarySaturation = Math.max(30, color.hsl.s) // Минимум 30% для видимости
+  const complementaryLightness = Math.min(70, Math.max(30, color.hsl.l)) // Ограничиваем диапазон 30-70%
+  
+  return {
+    h: Math.round(complementaryHue),
+    s: Math.round(complementarySaturation),
+    l: Math.round(complementaryLightness),
+  }
+}
+
+/**
+ * Получение названия цвета на основе HUE значения
+ * Используется для рекомендаций пользователю
+ * @param hue - HUE значение (0-360)
+ * @returns Название цвета на русском языке
+ */
+export function getColorNameFromHue(hue: number): string {
+  // Нормализуем HUE к диапазону 0-360
+  const normalizedHue = ((hue % 360) + 360) % 360
+  
+  if (normalizedHue < 15 || normalizedHue >= 345) {
+    return 'красный'
+  } else if (normalizedHue >= 15 && normalizedHue < 45) {
+    return 'оранжево-красный'
+  } else if (normalizedHue >= 45 && normalizedHue < 75) {
+    return 'оранжевый'
+  } else if (normalizedHue >= 75 && normalizedHue < 105) {
+    return 'желтый'
+  } else if (normalizedHue >= 105 && normalizedHue < 135) {
+    return 'желто-зеленый'
+  } else if (normalizedHue >= 135 && normalizedHue < 165) {
+    return 'зеленый'
+  } else if (normalizedHue >= 165 && normalizedHue < 195) {
+    return 'голубо-зеленый'
+  } else if (normalizedHue >= 195 && normalizedHue < 225) {
+    return 'голубой'
+  } else if (normalizedHue >= 225 && normalizedHue < 255) {
+    return 'синий'
+  } else if (normalizedHue >= 255 && normalizedHue < 285) {
+    return 'сине-фиолетовый'
+  } else if (normalizedHue >= 285 && normalizedHue < 315) {
+    return 'фиолетовый'
+  } else {
+    return 'красно-фиолетовый'
+  }
 }
 

@@ -7,8 +7,10 @@ import type {
 } from '@/types'
 import {
   createColorFromRgb,
-  isBlackColor,
+  isBlackInk,
   isColorful,
+  getComplementaryColor,
+  getColorNameFromHue,
 } from '@/utils/colorOperations'
 import { mixColorsSubtractive } from '@/utils/colorPhysics'
 import { calculateColorDistancePerceptualFull } from '@/utils/colorMetric'
@@ -25,8 +27,9 @@ const EXACT_MATCH_THRESHOLD = 2 // Порог для точного совпад
 const UNREACHABLE_THRESHOLD = 15 // Порог для недостижимого цвета (DeltaE)
 
 // Штраф за использование черного для затемнения цветных оттенков
-// Это заставит алгоритм предпочитать альтернативные решения (например, темно-коричневый)
-const BLACK_PENALTY = 25 // Штраф в DeltaE единицах
+// ПРИМЕЧАНИЕ: Больше не используется, так как черные чернила теперь полностью
+// исключаются из палитры для хроматических целей на этапе фильтрации
+// const BLACK_PENALTY = 25 // Штраф в DeltaE единицах (deprecated)
 
 // Шаг перебора пропорций (чем меньше, тем точнее, но медленнее)
 const PROPORTION_STEP_2 = 0.05 // Шаг для 2 цветов (5%)
@@ -282,41 +285,43 @@ export function findRecipe(
   // Проверяем, является ли целевой цвет цветным (не ЧБ)
   const isTargetColorful = isColorful(targetColor)
 
+  // Для хроматических цветов исключаем черные чернила из палитры
+  // Это гарантирует, что алгоритм не будет использовать черный для затемнения
+  let usablePalette = palette.colors
+  if (isTargetColorful) {
+    usablePalette = palette.colors.filter((color) => !isBlackInk(color))
+    
+    // Если после фильтрации палитра пуста, выбрасываем ошибку
+    if (usablePalette.length === 0) {
+      throw new Error(
+        'В палитре остались только черные чернила. Для цветных тату добавьте хроматические цвета в палитру.'
+      )
+    }
+    
+    // Если палитра стала слишком маленькой, предупреждаем
+    if (usablePalette.length < 2) {
+      throw new Error(
+        'В палитре недостаточно цветных чернил (минимум 2). Добавьте больше цветов в палитру.'
+      )
+    }
+  }
+
   for (let ingredientCount = 1; ingredientCount <= maxIngredients; ingredientCount++) {
-    const combinations = generateCombinations(palette.colors, ingredientCount)
+    const combinations = generateCombinations(usablePalette, ingredientCount)
 
     for (const combination of combinations) {
-      const colors = combination.map((idx) => palette.colors[idx])
+      const colors = combination.map((idx) => usablePalette[idx])
 
       // Оптимизируем пропорции для этой комбинации
       const optimized = optimizeProportions(targetColor, colors)
 
-      // Вычисляем финальное расстояние с учетом штрафов
-      let finalDistance = optimized.distance
+      // Для хроматических цветов черный уже исключен из палитры,
+      // поэтому штрафы за черный больше не нужны
+      // (оставляем код для обратной совместимости, но он не должен срабатывать)
 
-      // Если целевой цвет цветной, добавляем штраф за использование черного
-      if (isTargetColorful) {
-        const hasBlack = colors.some((color) => isBlackColor(color))
-        if (hasBlack) {
-          // Находим пропорцию черного в оптимизированном рецепте
-          let blackProportion = 0
-          for (let i = 0; i < colors.length; i++) {
-            if (isBlackColor(colors[i])) {
-              blackProportion = optimized.proportions[i]
-              break
-            }
-          }
-          // Штраф пропорционален количеству черного
-          // Если черного много (>20%), штраф максимальный
-          // Если черного мало (<10%), штраф минимальный
-          const penaltyMultiplier = Math.min(1, blackProportion / 0.2)
-          finalDistance += BLACK_PENALTY * penaltyMultiplier
-        }
-      }
-
-      // Сравниваем с учетом штрафов
+      // Сравниваем результаты
       const currentBestDistance = bestResult ? bestResult.distance : Infinity
-      if (finalDistance < currentBestDistance) {
+      if (optimized.distance < currentBestDistance) {
         bestResult = {
           ingredients: colors.map((color, idx) => ({
             colorId: color.id,
@@ -366,7 +371,8 @@ export function findRecipe(
       targetColor,
       bestResult.resultColor,
       bestResult.ingredients,
-      getColorById
+      getColorById,
+      usablePalette // Передаем отфильтрованную палитру для проверки комплементарных цветов
     )
     
     warnings.push({
@@ -387,17 +393,20 @@ export function findRecipe(
 
 /**
  * Генерация объяснения, почему цвет недостижим, и списка цветов для смешивания
+ * Для хроматических цветов также предлагает добавить комплементарный цвет
  * @param targetColor - Целевой цвет
  * @param nearestColor - Ближайший достижимый цвет
  * @param ingredients - Ингредиенты рецепта
  * @param getColorById - Функция для получения цвета по ID
- * @returns Текстовое объяснение с рецептом
+ * @param palette - Палитра пользователя (для проверки наличия комплементарного цвета)
+ * @returns Текстовое объяснение с рецептом и рекомендациями
  */
 function generateUnreachableExplanation(
   targetColor: Color,
   nearestColor: Color,
   ingredients: RecipeIngredient[],
-  getColorById: (id: string) => Color | undefined
+  getColorById: (id: string) => Color | undefined,
+  palette?: Color[]
 ): string {
   const reasons: string[] = []
 
@@ -434,6 +443,35 @@ function generateUnreachableExplanation(
     ? `Цветов для достижения в палитре нет (${reasons.join(', ')}). `
     : 'Цветов для достижения в палитре нет. '
 
-  return `${reasonText}Чтобы получить максимально близкий цвет, нужно смешивать такие оттенки: ${colorList}`
+  // Для хроматических цветов проверяем, нужен ли комплементарный цвет для затемнения
+  let complementarySuggestion = ''
+  if (isColorful(targetColor)) {
+    // Если целевой цвет темнее, чем ближайший, возможно нужен комплементарный для затемнения
+    if (targetColor.hsl.l < nearestColor.hsl.l - 10) {
+      const complementaryHsl = getComplementaryColor(targetColor)
+      const complementaryColorName = getColorNameFromHue(complementaryHsl.h)
+      
+      // Проверяем, есть ли близкий к комплементарному цвет в палитре
+      let hasComplementary = false
+      if (palette) {
+        for (const color of palette) {
+          if (isBlackInk(color)) continue // Пропускаем черные
+          const hueDiff = Math.abs(color.hsl.h - complementaryHsl.h)
+          const complementaryDiff = hueDiff > 180 ? 360 - hueDiff : hueDiff
+          // Если есть цвет в пределах 30 градусов от комплементарного
+          if (complementaryDiff < 30) {
+            hasComplementary = true
+            break
+          }
+        }
+      }
+      
+      if (!hasComplementary) {
+        complementarySuggestion = ` Для затемнения этого цвета без использования черного рекомендуется добавить в палитру оттенок, близкий к ${complementaryColorName} (комплементарный цвет).`
+      }
+    }
+  }
+
+  return `${reasonText}Чтобы получить максимально близкий цвет, нужно смешивать такие оттенки: ${colorList}.${complementarySuggestion}`
 }
 
