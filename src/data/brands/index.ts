@@ -1,14 +1,6 @@
-import type { BrandInk } from '@/types'
-import worldFamousData from './world-famous.json'
-import limitlessData from './limitless.json'
 
-// Объединение всех каталогов
-export const brandInks: BrandInk[] = [
-  ...(worldFamousData as BrandInk[]),
-  ...(limitlessData as BrandInk[]),
-]
 
-// Экспорт по брендам
-export const worldFamousInks = worldFamousData as BrandInk[]
-export const limitlessInks = limitlessData as BrandInk[]
-
+// ДЕПРЕКАЦИЯ: данные брендов удалены из приложения.
+// Файл оставлен как пустая заглушка для совместимости с процессом интеграции диффов.
+// Не использовать. В интерфейсе показываются доминирующие HEX-цвета без привязки к брендам.
+export {}
