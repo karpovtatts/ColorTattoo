@@ -28,6 +28,9 @@ dist-ssr
 .env.local
 .env.production
 
+# Server info (contains personal data)
+SERVER_INFO.md
+
 # Build outputs
 build
 *.tsbuildinfo
