@@ -281,7 +281,7 @@ export function createColorFromHex(
  */
 export function getComplementaryColor(color: Color): HSL {
   // Сдвигаем HUE на 180 градусов
-  let complementaryHue = (color.hsl.h + 180) % 360
+  const complementaryHue = (color.hsl.h + 180) % 360
   
   // Сохраняем насыщенность и яркость (или можно скорректировать для лучшего затемнения)
   // Для затемнения обычно нужна средняя/высокая насыщенность

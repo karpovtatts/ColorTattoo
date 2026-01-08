@@ -1,5 +1,5 @@
+import type { Color } from '../types'
 import {
-  Color,
   createColorFromHex,
   isWhiteColor,
   isBlackColor,
