@@ -29,6 +29,7 @@ function RecipePage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false)
+  const [excludedColorIds, setExcludedColorIds] = useState<Set<string>>(new Set())
 
   // Подбор рецепта при изменении целевого цвета или палитры
   useEffect(() => {
@@ -44,11 +45,24 @@ function RecipePage() {
       return
     }
 
+    // Формируем палитру без исключенных цветов
+    const filteredColors = palette.colors.filter((c) => !excludedColorIds.has(c.id))
+
+    // Проверка на минимальное количество цветов после исключений
+    if (filteredColors.length < 2) {
+      setError(
+        'После исключения цветов в палитре осталось меньше 2 оттенков. Верните некоторые цвета или добавьте новые в палитру.'
+      )
+      setRecipeResult(null)
+      setIsLoading(false)
+      return
+    }
+
     setIsLoading(true)
     setError(null)
 
     try {
-      const result = findRecipe(targetColor, palette)
+      const result = findRecipe(targetColor, { colors: filteredColors })
       setRecipeResult(result)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Ошибка при подборе рецепта')
@@ -56,11 +70,39 @@ function RecipePage() {
     } finally {
       setIsLoading(false)
     }
-  }, [targetColor, palette, validation.isValid])
+  }, [targetColor, palette, validation.isValid, excludedColorIds])
 
   // Функция для получения цвета по ID
   const getColorById = (id: string) => {
     return palette.colors.find((c) => c.id === id)
+  }
+
+  // Исключение ингредиента из рецепта
+  const handleExcludeIngredient = (colorId: string) => {
+    const color = getColorById(colorId)
+    setExcludedColorIds((prev) => {
+      const next = new Set(prev)
+      next.add(colorId)
+      return next
+    })
+    success(`Цвет ${color?.name || color?.hex || colorId} исключён из расчёта`)
+  }
+
+  // Восстановление исключенного цвета
+  const handleRestoreExcluded = (colorId: string) => {
+    const color = getColorById(colorId)
+    setExcludedColorIds((prev) => {
+      const next = new Set(prev)
+      next.delete(colorId)
+      return next
+    })
+    success(`Цвет ${color?.name || color?.hex || colorId} возвращён в палитру для расчёта`)
+  }
+
+  // Сброс всех исключений
+  const handleResetExclusions = () => {
+    setExcludedColorIds(new Set())
+    success('Исключения сброшены')
   }
 
   // Обработка сохранения рецепта
@@ -129,7 +171,8 @@ function RecipePage() {
               if (targetColor) {
                 setIsLoading(true)
                 try {
-                  const result = findRecipe(targetColor, palette)
+                  const filteredColors = palette.colors.filter((c) => !excludedColorIds.has(c.id))
+                  const result = findRecipe(targetColor, { colors: filteredColors })
                   setRecipeResult(result)
                 } catch (err) {
                   setError(err instanceof Error ? err.message : 'Ошибка при подборе рецепта')
@@ -140,6 +183,39 @@ function RecipePage() {
             }}
             onDismiss={() => setError(null)}
           />
+        )}
+
+        {/* Исключенные цвета */}
+        {excludedColorIds.size > 0 && (
+          <div className="recipe-page__excluded">
+            <h2 className="recipe-page__section-title">Исключенные цвета</h2>
+            <div className="recipe-page__excluded-list">
+              {Array.from(excludedColorIds).map((id) => {
+                const color = getColorById(id)
+                if (!color) return null
+                return (
+                  <div key={id} className="recipe-page__excluded-chip">
+                    <span className="recipe-page__excluded-chip-color" style={{ backgroundColor: color.hex }} />
+                    <span className="recipe-page__excluded-chip-label">
+                      {color.name || color.hex}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleRestoreExcluded(id)}
+                    >
+                      Вернуть
+                    </Button>
+                  </div>
+                )
+              })}
+            </div>
+            <div className="recipe-page__excluded-actions">
+              <Button variant="secondary" onClick={handleResetExclusions}>
+                Сбросить исключения
+              </Button>
+            </div>
+          </div>
         )}
 
         {/* Загрузка */}
@@ -198,6 +274,7 @@ function RecipePage() {
                 getColorById={getColorById}
                 format="parts"
                 showIngredients
+                onExcludeIngredient={handleExcludeIngredient}
               />
             </div>
 

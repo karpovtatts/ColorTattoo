@@ -1,5 +1,6 @@
 import type { Recipe, Color } from '@/types'
 import { ColorSwatch } from '@/components'
+import { Button } from '@/components'
 import { formatRecipe } from '@/utils/recipeFormatter'
 import './RecipeDisplay.css'
 
@@ -8,6 +9,7 @@ interface RecipeDisplayProps {
   getColorById: (id: string) => Color | undefined
   format?: 'parts' | 'percentages' | 'ratio'
   showIngredients?: boolean
+  onExcludeIngredient?: (colorId: string) => void
 }
 
 function RecipeDisplay({
@@ -15,6 +17,7 @@ function RecipeDisplay({
   getColorById,
   format = 'parts',
   showIngredients = true,
+  onExcludeIngredient,
 }: RecipeDisplayProps) {
   const formattedRecipe = formatRecipe(recipe, getColorById, format)
 
@@ -42,6 +45,18 @@ function RecipeDisplay({
                       {Math.round(ingredient.proportion * 100)}%
                     </span>
                   </div>
+                  {onExcludeIngredient && (
+                    <div className="recipe-display__ingredient-actions">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onExcludeIngredient(ingredient.colorId)}
+                        aria-label={`Исключить ${color.name || color.hex} из рецепта`}
+                      >
+                        ✕ Исключить
+                      </Button>
+                    </div>
+                  )}
                 </div>
               )
             })}
