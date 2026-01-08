@@ -7,6 +7,7 @@ import { processImageFile, createImagePreview } from '@/utils/imageProcessor'
 import { quantizeColors } from '@/utils/quantizer'
 import { usePaletteContext } from '@/contexts/PaletteContext'
 import { createColorFromHex } from '@/utils/colorOperations'
+import { postProcessQuantizedHexColors } from '@/utils/colorPostProcessing'
 import './ImageAnalysisPage.css'
 
 const COLOR_COUNT_OPTIONS = [8, 16, 24, 36, 72, 120] as const
@@ -18,12 +19,14 @@ function ImageAnalysisPage() {
   const [isProcessing, setIsProcessing] = useState(false)
   const [results, setResults] = useState<string[]>([])
   const [error, setError] = useState<string | null>(null)
+  const [hasAnalyzed, setHasAnalyzed] = useState(false)
   const { addColor } = usePaletteContext()
 
   const handleImageSelect = async (file: File) => {
     setSelectedFile(file)
     setError(null)
     setResults([])
+    setHasAnalyzed(false)
 
     try {
       const preview = await createImagePreview(file)
@@ -40,6 +43,7 @@ function ImageAnalysisPage() {
     setIsProcessing(true)
     setError(null)
     setResults([])
+    setHasAnalyzed(false)
 
     try {
       // Обработка изображения
@@ -47,7 +51,9 @@ function ImageAnalysisPage() {
 
       // Квантование цветов
       const quantizedColors = quantizeColors(pixels, colorCount)
-      setResults(quantizedColors)
+      // Пост-обработка: исключаем белые/черные и сортируем по светлоте
+      const cleanedColors = postProcessQuantizedHexColors(quantizedColors)
+      setResults(cleanedColors)
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : 'Произошла ошибка при анализе'
@@ -55,6 +61,7 @@ function ImageAnalysisPage() {
       console.error(err)
     } finally {
       setIsProcessing(false)
+      setHasAnalyzed(true)
     }
   }
 
@@ -63,13 +70,14 @@ function ImageAnalysisPage() {
     setImagePreview(null)
     setResults([])
     setError(null)
+    setHasAnalyzed(false)
   }
 
   const resultsRef = useRef<HTMLDivElement>(null)
 
   const handleAddToPalette = (hex: string) => {
     try {
-      const color = createColorFromHex(hex, undefined, hex.toUpperCase())
+      const color = createColorFromHex(hex)
       addColor(color)
     } catch (e) {
       console.error('Не удалось добавить цвет в палитру', e)
@@ -165,6 +173,12 @@ function ImageAnalysisPage() {
                   text="Анализ изображения, это может занять несколько секунд..."
                   size="large"
                 />
+              </div>
+            )}
+
+            {hasAnalyzed && !isProcessing && results.length === 0 && !error && (
+              <div className="image-analysis-page__empty">
+                После исключения белого и черного подходящих цветов не найдено
               </div>
             )}
 
