@@ -7,7 +7,7 @@ import { processImageFile, createImagePreview } from '@/utils/imageProcessor'
 import { quantizeColors } from '@/utils/quantizer'
 import { usePaletteContext } from '@/contexts/PaletteContext'
 import { createColorFromHex } from '@/utils/colorOperations'
-import { postProcessQuantizedHexColors } from '@/utils/colorPostProcessing'
+import { postProcessQuantizedHexColors, type SelectionMethod } from '@/utils/colorPostProcessing'
 import './ImageAnalysisPage.css'
 
 const COLOR_COUNT_OPTIONS = [8, 16, 24, 36, 72, 120] as const
@@ -16,6 +16,7 @@ function ImageAnalysisPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [colorCount, setColorCount] = useState<number>(16)
+  const [selectionMethod, setSelectionMethod] = useState<SelectionMethod>('representative')
   const [isProcessing, setIsProcessing] = useState(false)
   const [results, setResults] = useState<string[]>([])
   const [error, setError] = useState<string | null>(null)
@@ -49,10 +50,11 @@ function ImageAnalysisPage() {
       // Обработка изображения
       const { pixels } = await processImageFile(selectedFile)
 
-      // Квантование цветов
+      // Квантование цветов (теперь возвращает массив {hex, population})
       const quantizedColors = quantizeColors(pixels, colorCount)
       // Пост-обработка: исключаем белые/черные и сортируем по светлоте
-      const cleanedColors = postProcessQuantizedHexColors(quantizedColors)
+      // Передаем метод выбора: 'representative' или 'dominant'
+      const cleanedColors = postProcessQuantizedHexColors(quantizedColors, selectionMethod)
       setResults(cleanedColors)
     } catch (err) {
       const errorMessage =
@@ -149,6 +151,29 @@ function ImageAnalysisPage() {
                       {count}
                     </option>
                   ))}
+                </select>
+              </div>
+
+              <div className="image-analysis-page__control-group">
+                <label
+                  htmlFor="selection-method"
+                  className="image-analysis-page__label"
+                >
+                  Метод анализа:
+                </label>
+                <select
+                  id="selection-method"
+                  value={selectionMethod}
+                  onChange={(e) => setSelectionMethod(e.target.value as SelectionMethod)}
+                  className="image-analysis-page__select"
+                  disabled={isProcessing}
+                >
+                  <option value="representative">
+                    Репрезентативные (художественный)
+                  </option>
+                  <option value="dominant">
+                    Доминирующие (по площади)
+                  </option>
                 </select>
               </div>
 

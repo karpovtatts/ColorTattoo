@@ -218,12 +218,14 @@ export function isColorful(color: Color): boolean {
  * @param rgb - RGB значения
  * @param id - ID цвета (опционально, будет сгенерирован)
  * @param name - Название цвета (опционально)
+ * @param population - Популяция цвета (количество пикселей/площадь, опционально)
  * @returns Color объект
  */
 export function createColorFromRgb(
   rgb: RGB,
   id?: string,
-  name?: string
+  name?: string,
+  population?: number
 ): Color {
   const normalizedRgb = normalizeRgb(rgb)
   const hsl = rgbToHsl(normalizedRgb)
@@ -237,6 +239,7 @@ export function createColorFromRgb(
     hsl,
     hex,
     lab,
+    population,
   }
 }
 
@@ -245,15 +248,17 @@ export function createColorFromRgb(
  * @param hsl - HSL значения
  * @param id - ID цвета (опционально)
  * @param name - Название цвета (опционально)
+ * @param population - Популяция цвета (количество пикселей/площадь, опционально)
  * @returns Color объект
  */
 export function createColorFromHsl(
   hsl: HSL,
   id?: string,
-  name?: string
+  name?: string,
+  population?: number
 ): Color {
   const rgb = hslToRgb(hsl)
-  return createColorFromRgb(rgb, id, name)
+  return createColorFromRgb(rgb, id, name, population)
 }
 
 /**
@@ -261,15 +266,17 @@ export function createColorFromHsl(
  * @param hex - HEX строка
  * @param id - ID цвета (опционально)
  * @param name - Название цвета (опционально)
+ * @param population - Популяция цвета (количество пикселей/площадь, опционально)
  * @returns Color объект
  */
 export function createColorFromHex(
   hex: string,
   id?: string,
-  name?: string
+  name?: string,
+  population?: number
 ): Color {
   const rgb = hexToRgb(hex)
-  return createColorFromRgb(rgb, id, name)
+  return createColorFromRgb(rgb, id, name, population)
 }
 
 /**

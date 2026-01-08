@@ -80,6 +80,7 @@ function assignPixelsToClusters(
 
 /**
  * Пересчет центроидов как среднее значение пикселей в кластере
+ * Также возвращает назначения для финального подсчета популяций
  */
 function updateCentroids(
   pixels: PixelData[],
@@ -145,9 +146,12 @@ function hasConverged(
  * Квантование цветов изображения методом K-means
  * @param pixels - Массив пикселей изображения
  * @param k - Количество цветов для извлечения (количество кластеров)
- * @returns Массив доминирующих цветов в формате HEX
+ * @returns Массив объектов с HEX-цветами и их популяцией (количество пикселей)
  */
-export function quantizeColors(pixels: PixelData[], k: number): string[] {
+export function quantizeColors(
+  pixels: PixelData[],
+  k: number
+): Array<{ hex: string; population: number }> {
   if (pixels.length === 0) {
     throw new Error('Массив пикселей пуст')
   }
@@ -158,20 +162,24 @@ export function quantizeColors(pixels: PixelData[], k: number): string[] {
 
   if (k > pixels.length) {
     // Если запрошено больше цветов, чем пикселей, возвращаем уникальные цвета
-    const uniqueColors = new Map<string, PixelData>()
+    const uniqueColors = new Map<string, { pixel: PixelData; count: number }>()
     for (const pixel of pixels) {
       const key = `${pixel.r},${pixel.g},${pixel.b}`
       if (!uniqueColors.has(key)) {
-        uniqueColors.set(key, pixel)
+        uniqueColors.set(key, { pixel, count: 1 })
+      } else {
+        uniqueColors.get(key)!.count++
       }
     }
-    return Array.from(uniqueColors.values()).map((p) =>
-      rgbToHex(normalizeRgb({ r: p.r, g: p.g, b: p.b }))
-    )
+    return Array.from(uniqueColors.values()).map(({ pixel, count }) => ({
+      hex: rgbToHex(normalizeRgb({ r: pixel.r, g: pixel.g, b: pixel.b })),
+      population: count,
+    }))
   }
 
   // Инициализация центроидов
   let centroids = initializeCentroids(pixels, k)
+  let lastAssignments: number[] = []
 
   // Итерации алгоритма K-means
   for (let iteration = 0; iteration < MAX_ITERATIONS; iteration++) {
@@ -184,16 +192,25 @@ export function quantizeColors(pixels: PixelData[], k: number): string[] {
     // Проверка сходимости
     if (hasConverged(centroids, newCentroids)) {
       centroids = newCentroids
+      lastAssignments = assignments
       break
     }
 
     centroids = newCentroids
+    lastAssignments = assignments
   }
 
-  // Конвертируем центроиды в HEX
-  const colors = centroids.map((centroid) =>
-    rgbToHex(normalizeRgb({ r: centroid.r, g: centroid.g, b: centroid.b }))
-  )
+  // Подсчитываем популяцию каждого кластера из финальных назначений
+  const clusterPopulations = new Array<number>(k).fill(0)
+  for (const assignment of lastAssignments) {
+    clusterPopulations[assignment]++
+  }
+
+  // Конвертируем центроиды в HEX вместе с популяцией
+  const colors = centroids.map((centroid, index) => ({
+    hex: rgbToHex(normalizeRgb({ r: centroid.r, g: centroid.g, b: centroid.b })),
+    population: clusterPopulations[index],
+  }))
 
   return colors
 }
