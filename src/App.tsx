@@ -14,9 +14,12 @@ import './App.css'
 function AppContent() {
   const { toasts, removeToast } = useToastContext()
 
+  // Получаем base path из Vite (автоматически из vite.config.ts base)
+  const basename = import.meta.env.BASE_URL
+
   return (
     <>
-      <Router>
+      <Router basename={basename}>
         <Layout>
           <Routes>
             <Route path="/" element={<HomePage />} />

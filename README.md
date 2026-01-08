@@ -53,6 +53,10 @@ npm run build
 npm run preview
 ```
 
+## Деплой на продакшен
+
+Инструкция по деплою: [SERVER_INFO.md](./SERVER_INFO.md)
+
 ## Структура проекта
 
 ```
