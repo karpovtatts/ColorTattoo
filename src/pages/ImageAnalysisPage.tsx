@@ -17,6 +17,7 @@ function ImageAnalysisPage() {
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [colorCount, setColorCount] = useState<number>(16)
   const [selectionMethod, setSelectionMethod] = useState<SelectionMethod>('representative')
+  const [similarityThreshold, setSimilarityThreshold] = useState<number>(20)
   const [isProcessing, setIsProcessing] = useState(false)
   const [results, setResults] = useState<string[]>([])
   const [error, setError] = useState<string | null>(null)
@@ -92,7 +93,7 @@ function ImageAnalysisPage() {
         pixels,
         colorCount,
         selectionMethod,
-        similarityThreshold: 20, // По умолчанию, будет настраиваться в задаче 1.2
+        similarityThreshold,
         achromaticThreshold: 10, // По умолчанию, будет настраиваться в задаче 1.3
       })
     } catch (err) {
@@ -213,6 +214,29 @@ function ImageAnalysisPage() {
                     Доминирующие (по площади)
                   </option>
                 </select>
+              </div>
+
+              <div className="image-analysis-page__control-group">
+                <label
+                  htmlFor="similarity-threshold"
+                  className="image-analysis-page__label"
+                  title="Порог схожести (Delta E): чем меньше значение, тем более похожие цвета группируются вместе. Меньшие значения дают больше цветов, большие - меньше."
+                >
+                  Порог схожести: {similarityThreshold}
+                </label>
+                <input
+                  type="range"
+                  id="similarity-threshold"
+                  min="5"
+                  max="50"
+                  value={similarityThreshold}
+                  onChange={(e) => setSimilarityThreshold(Number(e.target.value))}
+                  className="image-analysis-page__slider"
+                  disabled={isProcessing}
+                />
+                <div className="image-analysis-page__slider-hint">
+                  Меньше значение = больше цветов (более строгая группировка)
+                </div>
               </div>
 
               <Button
