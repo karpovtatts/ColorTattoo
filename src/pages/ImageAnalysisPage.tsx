@@ -28,7 +28,6 @@ function ImageAnalysisPage() {
   const [selectedColorHex, setSelectedColorHex] = useState<string | null>(null)
   const [isColorDetailsModalOpen, setIsColorDetailsModalOpen] = useState(false)
   const [originalResults, setOriginalResults] = useState<string[]>([])
-  const [highlightedColorHex, setHighlightedColorHex] = useState<string | null>(null)
   const [highlightedPixels, setHighlightedPixels] = useState<Array<{ x: number; y: number }>>([])
   const imageCanvasRef = useRef<HTMLCanvasElement | null>(null)
   const { addColor } = usePaletteContext()
@@ -124,7 +123,6 @@ function ImageAnalysisPage() {
     setResults([])
     setError(null)
     setHasAnalyzed(false)
-    setHighlightedColorHex(null)
     setHighlightedPixels([])
     imageCanvasRef.current = null
   }
@@ -169,7 +167,6 @@ function ImageAnalysisPage() {
   }
 
   const handleColorHover = (hex: string) => {
-    setHighlightedColorHex(hex)
     if (imageCanvasRef.current) {
       try {
         const pixels = createColorPixelMapping(imageCanvasRef.current, hex, 40)
@@ -182,7 +179,6 @@ function ImageAnalysisPage() {
   }
 
   const handleColorLeave = () => {
-    setHighlightedColorHex(null)
     setHighlightedPixels([])
   }
 

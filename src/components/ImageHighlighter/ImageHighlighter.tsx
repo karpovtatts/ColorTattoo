@@ -16,7 +16,6 @@ function ImageHighlighter({
 }: ImageHighlighterProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const overlayRef = useRef<HTMLCanvasElement>(null)
-  const imageRef = useRef<HTMLImageElement>(null)
   const [imageSize, setImageSize] = useState<{ width: number; height: number } | null>(null)
   const [imageLoaded, setImageLoaded] = useState(false)
 
@@ -27,7 +26,6 @@ function ImageHighlighter({
       setImageLoaded(true)
     }
     img.src = imageSrc
-    imageRef.current = img
   }, [imageSrc])
 
   useEffect(() => {
@@ -93,12 +91,10 @@ function ImageHighlighter({
         src={imageSrc}
         alt="Изображение"
         className="image-highlighter__image"
-        onLoad={() => {
-          const img = imageRef.current
-          if (img) {
-            setImageSize({ width: img.width, height: img.height })
-            setImageLoaded(true)
-          }
+        onLoad={(e) => {
+          const img = e.currentTarget
+          setImageSize({ width: img.width, height: img.height })
+          setImageLoaded(true)
         }}
       />
       <canvas
