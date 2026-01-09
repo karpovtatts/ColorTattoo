@@ -3,6 +3,7 @@ import ImageUploader from '@/components/ImageUploader/ImageUploader'
 import Button from '@/components/Button/Button'
 import LoadingSpinner from '@/components/LoadingSpinner/LoadingSpinner'
 import Container from '@/components/Container/Container'
+import ColorDetailsModal from '@/components/ColorDetailsModal/ColorDetailsModal'
 import { processImageFile, createImagePreview } from '@/utils/imageProcessor'
 import { usePaletteContext } from '@/contexts/PaletteContext'
 import { createColorFromHex } from '@/utils/colorOperations'
@@ -23,6 +24,8 @@ function ImageAnalysisPage() {
   const [results, setResults] = useState<string[]>([])
   const [error, setError] = useState<string | null>(null)
   const [hasAnalyzed, setHasAnalyzed] = useState(false)
+  const [selectedColorHex, setSelectedColorHex] = useState<string | null>(null)
+  const [isColorDetailsModalOpen, setIsColorDetailsModalOpen] = useState(false)
   const { addColor } = usePaletteContext()
   const workerRef = useRef<Worker | null>(null)
 
@@ -134,6 +137,16 @@ function ImageAnalysisPage() {
       console.error('Не удалось скопировать HEX', e)
       setError('Не удалось скопировать HEX')
     }
+  }
+
+  const handleColorClick = (hex: string) => {
+    setSelectedColorHex(hex)
+    setIsColorDetailsModalOpen(true)
+  }
+
+  const handleCloseColorDetails = () => {
+    setIsColorDetailsModalOpen(false)
+    setSelectedColorHex(null)
   }
 
   return (
@@ -339,11 +352,19 @@ function ImageAnalysisPage() {
                         <div
                           className="image-analysis-page__color-preview"
                           style={{ backgroundColor: hex }}
-                          title={hex}
+                          title={`${hex} - Кликните для деталей`}
+                          onClick={() => handleColorClick(hex)}
                         />
                       </div>
                       <div className="image-analysis-page__result-content">
-                        <div className="image-analysis-page__ink-hex">{hex}</div>
+                        <div
+                          className="image-analysis-page__ink-hex"
+                          onClick={() => handleColorClick(hex)}
+                          style={{ cursor: 'pointer' }}
+                          title="Кликните для деталей"
+                        >
+                          {hex}
+                        </div>
                         <div className="image-analysis-page__result-actions" style={{ display: 'flex', gap: 8, marginTop: 8 }}>
                           <Button
                             size="sm"
@@ -368,6 +389,15 @@ function ImageAnalysisPage() {
               </div>
             )}
           </>
+        )}
+
+        {selectedColorHex && (
+          <ColorDetailsModal
+            isOpen={isColorDetailsModalOpen}
+            colorHex={selectedColorHex}
+            onClose={handleCloseColorDetails}
+            onAddToPalette={handleAddToPalette}
+          />
         )}
       </div>
     </Container>
