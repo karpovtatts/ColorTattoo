@@ -26,6 +26,7 @@ function ImageAnalysisPage() {
   const [hasAnalyzed, setHasAnalyzed] = useState(false)
   const [selectedColorHex, setSelectedColorHex] = useState<string | null>(null)
   const [isColorDetailsModalOpen, setIsColorDetailsModalOpen] = useState(false)
+  const [originalResults, setOriginalResults] = useState<string[]>([])
   const { addColor } = usePaletteContext()
   const workerRef = useRef<Worker | null>(null)
 
@@ -41,8 +42,10 @@ function ImageAnalysisPage() {
         if (workerError) {
           setError(workerError)
           setResults([])
+          setOriginalResults([])
         } else {
           setResults(colors)
+          setOriginalResults(colors)
           setError(null)
         }
         setHasAnalyzed(true)
@@ -147,6 +150,14 @@ function ImageAnalysisPage() {
   const handleCloseColorDetails = () => {
     setIsColorDetailsModalOpen(false)
     setSelectedColorHex(null)
+  }
+
+  const handleRemoveColor = (hexToRemove: string) => {
+    setResults((prevResults) => prevResults.filter((hex) => hex !== hexToRemove))
+  }
+
+  const handleRestoreAll = () => {
+    setResults([...originalResults])
   }
 
   return (
@@ -339,9 +350,21 @@ function ImageAnalysisPage() {
 
             {results.length > 0 && (
               <div className="image-analysis-page__results" ref={resultsRef}>
-                <h2 className="image-analysis-page__results-title">
-                  Результаты анализа ({results.length} цветов)
-                </h2>
+                <div className="image-analysis-page__results-header">
+                  <h2 className="image-analysis-page__results-title">
+                    Результаты анализа ({results.length} цветов)
+                  </h2>
+                  {results.length < originalResults.length && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleRestoreAll}
+                      title="Восстановить все удаленные цвета"
+                    >
+                      ↶ Восстановить все
+                    </Button>
+                  )}
+                </div>
                 <div className="image-analysis-page__results-grid">
                   {results.map((hex, index) => (
                     <div
@@ -355,6 +378,17 @@ function ImageAnalysisPage() {
                           title={`${hex} - Кликните для деталей`}
                           onClick={() => handleColorClick(hex)}
                         />
+                        <button
+                          className="image-analysis-page__remove-color-btn"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleRemoveColor(hex)
+                          }}
+                          title="Удалить цвет из результатов"
+                          aria-label="Удалить цвет"
+                        >
+                          ×
+                        </button>
                       </div>
                       <div className="image-analysis-page__result-content">
                         <div
