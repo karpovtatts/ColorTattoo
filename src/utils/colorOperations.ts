@@ -303,6 +303,86 @@ export function getComplementaryColor(color: Color): HSL {
 }
 
 /**
+ * Расчет комплементарного цвета (противоположного на цветовом круге)
+ * Для гармонии цветов - сохраняет насыщенность и яркость исходного цвета
+ * @param color - Исходный цвет
+ * @returns Комплементарный цвет (Color)
+ */
+export function getComplementaryColorForHarmony(color: Color): Color {
+  const complementaryHue = (color.hsl.h + 180) % 360
+  const complementaryHsl: HSL = {
+    h: Math.round(complementaryHue),
+    s: color.hsl.s,
+    l: color.hsl.l,
+  }
+  return createColorFromHsl(complementaryHsl)
+}
+
+/**
+ * Расчет триадных цветов (три равномерно распределенных цвета на цветовом круге)
+ * Триада создает гармоничную палитру из трех цветов, расположенных на 120 градусов друг от друга
+ * @param color - Исходный цвет
+ * @returns Массив из трех цветов (исходный + два дополнительных)
+ */
+export function getTriadicColors(color: Color): Color[] {
+  const colors: Color[] = [color]
+  
+  // Первый дополнительный цвет - сдвиг на 120 градусов
+  const firstHue = (color.hsl.h + 120) % 360
+  const firstHsl: HSL = {
+    h: Math.round(firstHue),
+    s: color.hsl.s,
+    l: color.hsl.l,
+  }
+  colors.push(createColorFromHsl(firstHsl))
+  
+  // Второй дополнительный цвет - сдвиг на 240 градусов
+  const secondHue = (color.hsl.h + 240) % 360
+  const secondHsl: HSL = {
+    h: Math.round(secondHue),
+    s: color.hsl.s,
+    l: color.hsl.l,
+  }
+  colors.push(createColorFromHsl(secondHsl))
+  
+  return colors
+}
+
+/**
+ * Расчет аналоговых цветов (соседние цвета на цветовом круге)
+ * Аналоговые цвета создают мягкую, спокойную гармонию, так как они близки друг к другу
+ * @param color - Исходный цвет
+ * @param spread - Расстояние между цветами в градусах (по умолчанию 30)
+ * @returns Массив из трех цветов (цвет слева, исходный, цвет справа)
+ */
+export function getAnalogousColors(color: Color, spread: number = 30): Color[] {
+  const colors: Color[] = []
+  
+  // Цвет слева (минус spread градусов)
+  const leftHue = (color.hsl.h - spread + 360) % 360
+  const leftHsl: HSL = {
+    h: Math.round(leftHue),
+    s: color.hsl.s,
+    l: color.hsl.l,
+  }
+  colors.push(createColorFromHsl(leftHsl))
+  
+  // Исходный цвет
+  colors.push(color)
+  
+  // Цвет справа (плюс spread градусов)
+  const rightHue = (color.hsl.h + spread) % 360
+  const rightHsl: HSL = {
+    h: Math.round(rightHue),
+    s: color.hsl.s,
+    l: color.hsl.l,
+  }
+  colors.push(createColorFromHsl(rightHsl))
+  
+  return colors
+}
+
+/**
  * Получение названия цвета на основе HUE значения
  * Используется для рекомендаций пользователю
  * @param hue - HUE значение (0-360)

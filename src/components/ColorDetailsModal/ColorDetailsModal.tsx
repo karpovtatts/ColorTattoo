@@ -1,6 +1,12 @@
 import { useEffect, useState } from 'react'
 import type { Color } from '@/types'
-import { createColorFromHex, getColorNameFromHue } from '@/utils/colorOperations'
+import {
+  createColorFromHex,
+  getColorNameFromHue,
+  getComplementaryColorForHarmony,
+  getTriadicColors,
+  getAnalogousColors,
+} from '@/utils/colorOperations'
 import { rgbToCmyk } from '@/utils/colorConversions'
 import ColorPreview from '@/components/ColorPreview/ColorPreview'
 import Button from '@/components/Button/Button'
@@ -231,6 +237,88 @@ function ColorDetailsModal({
                   >
                     {copiedFormat === 'cmyk-values' ? '✓' : '📋'}
                   </Button>
+                </div>
+              </div>
+            </div>
+
+            <div className="color-details-modal__harmony">
+              <h3 className="color-details-modal__harmony-title">Гармония цветов</h3>
+              
+              <div className="color-details-modal__harmony-section">
+                <div className="color-details-modal__harmony-header">
+                  <h4 className="color-details-modal__harmony-subtitle">Комплементарный</h4>
+                  <p className="color-details-modal__harmony-description">
+                    Противоположный цвет на цветовом круге. Создает контраст и динамику.
+                  </p>
+                </div>
+                <div className="color-details-modal__harmony-colors">
+                  {(() => {
+                    const complementary = getComplementaryColorForHarmony(color)
+                    return (
+                      <div
+                        key={complementary.hex}
+                        className="color-details-modal__harmony-color-item"
+                        onClick={() => onAddToPalette?.(complementary.hex)}
+                        title="Кликните для добавления в палитру"
+                      >
+                        <div
+                          className="color-details-modal__harmony-color-preview"
+                          style={{ backgroundColor: complementary.hex }}
+                        />
+                        <div className="color-details-modal__harmony-color-hex">{complementary.hex}</div>
+                      </div>
+                    )
+                  })()}
+                </div>
+              </div>
+
+              <div className="color-details-modal__harmony-section">
+                <div className="color-details-modal__harmony-header">
+                  <h4 className="color-details-modal__harmony-subtitle">Триада</h4>
+                  <p className="color-details-modal__harmony-description">
+                    Три равномерно распределенных цвета на цветовом круге (120°). Создает яркую, сбалансированную палитру.
+                  </p>
+                </div>
+                <div className="color-details-modal__harmony-colors">
+                  {getTriadicColors(color).map((triadicColor) => (
+                    <div
+                      key={triadicColor.hex}
+                      className="color-details-modal__harmony-color-item"
+                      onClick={() => onAddToPalette?.(triadicColor.hex)}
+                      title="Кликните для добавления в палитру"
+                    >
+                      <div
+                        className="color-details-modal__harmony-color-preview"
+                        style={{ backgroundColor: triadicColor.hex }}
+                      />
+                      <div className="color-details-modal__harmony-color-hex">{triadicColor.hex}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="color-details-modal__harmony-section">
+                <div className="color-details-modal__harmony-header">
+                  <h4 className="color-details-modal__harmony-subtitle">Аналоговые</h4>
+                  <p className="color-details-modal__harmony-description">
+                    Соседние цвета на цветовом круге (±30°). Создают мягкую, спокойную гармонию.
+                  </p>
+                </div>
+                <div className="color-details-modal__harmony-colors">
+                  {getAnalogousColors(color).map((analogousColor) => (
+                    <div
+                      key={analogousColor.hex}
+                      className="color-details-modal__harmony-color-item"
+                      onClick={() => onAddToPalette?.(analogousColor.hex)}
+                      title="Кликните для добавления в палитру"
+                    >
+                      <div
+                        className="color-details-modal__harmony-color-preview"
+                        style={{ backgroundColor: analogousColor.hex }}
+                      />
+                      <div className="color-details-modal__harmony-color-hex">{analogousColor.hex}</div>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
