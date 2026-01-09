@@ -1,13 +1,13 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import ImageUploader from '@/components/ImageUploader/ImageUploader'
 import Button from '@/components/Button/Button'
 import LoadingSpinner from '@/components/LoadingSpinner/LoadingSpinner'
 import Container from '@/components/Container/Container'
 import { processImageFile, createImagePreview } from '@/utils/imageProcessor'
-import { quantizeColors } from '@/utils/quantizer'
 import { usePaletteContext } from '@/contexts/PaletteContext'
 import { createColorFromHex } from '@/utils/colorOperations'
-import { postProcessQuantizedHexColors, type SelectionMethod } from '@/utils/colorPostProcessing'
+import type { SelectionMethod } from '@/types'
+import ColorAnalysisWorker from '@/workers/colorAnalysis.worker?worker'
 import './ImageAnalysisPage.css'
 
 const COLOR_COUNT_OPTIONS = [8, 16, 24, 36, 72, 120] as const
@@ -22,6 +22,42 @@ function ImageAnalysisPage() {
   const [error, setError] = useState<string | null>(null)
   const [hasAnalyzed, setHasAnalyzed] = useState(false)
   const { addColor } = usePaletteContext()
+  const workerRef = useRef<Worker | null>(null)
+
+  // Инициализация и очистка Web Worker
+  useEffect(() => {
+    workerRef.current = new ColorAnalysisWorker()
+
+    workerRef.current.onmessage = (e) => {
+      const { type, colors, error: workerError } = e.data
+
+      if (type === 'analyze-result') {
+        setIsProcessing(false)
+        if (workerError) {
+          setError(workerError)
+          setResults([])
+        } else {
+          setResults(colors)
+          setError(null)
+        }
+        setHasAnalyzed(true)
+      }
+    }
+
+    workerRef.current.onerror = (err) => {
+      setIsProcessing(false)
+      setError('Ошибка при обработке изображения в Web Worker')
+      console.error('Worker error:', err)
+      setHasAnalyzed(true)
+    }
+
+    return () => {
+      if (workerRef.current) {
+        workerRef.current.terminate()
+        workerRef.current = null
+      }
+    }
+  }, [])
 
   const handleImageSelect = async (file: File) => {
     setSelectedFile(file)
@@ -39,7 +75,7 @@ function ImageAnalysisPage() {
   }
 
   const handleAnalyze = async () => {
-    if (!selectedFile) return
+    if (!selectedFile || !workerRef.current) return
 
     setIsProcessing(true)
     setError(null)
@@ -47,22 +83,24 @@ function ImageAnalysisPage() {
     setHasAnalyzed(false)
 
     try {
-      // Обработка изображения
+      // Обработка изображения (в основном потоке, так как это быстро)
       const { pixels } = await processImageFile(selectedFile)
 
-      // Квантование цветов (теперь возвращает массив {hex, population})
-      const quantizedColors = quantizeColors(pixels, colorCount)
-      // Пост-обработка: исключаем белые/черные и сортируем по светлоте
-      // Передаем метод выбора: 'representative' или 'dominant'
-      const cleanedColors = postProcessQuantizedHexColors(quantizedColors, selectionMethod)
-      setResults(cleanedColors)
+      // Отправляем данные в Web Worker для обработки
+      workerRef.current.postMessage({
+        type: 'analyze',
+        pixels,
+        colorCount,
+        selectionMethod,
+        similarityThreshold: 20, // По умолчанию, будет настраиваться в задаче 1.2
+        achromaticThreshold: 10, // По умолчанию, будет настраиваться в задаче 1.3
+      })
     } catch (err) {
+      setIsProcessing(false)
       const errorMessage =
         err instanceof Error ? err.message : 'Произошла ошибка при анализе'
       setError(errorMessage)
       console.error(err)
-    } finally {
-      setIsProcessing(false)
       setHasAnalyzed(true)
     }
   }

@@ -102,3 +102,6 @@ export interface ImageDominantColor {
   percentage?: number
 }
 
+// Метод выбора репрезентативных цветов при анализе изображения
+export type SelectionMethod = 'representative' | 'dominant'
+

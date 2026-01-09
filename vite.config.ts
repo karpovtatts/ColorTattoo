@@ -23,7 +23,11 @@ export default defineConfig(({ mode }) => {
         '@/services': path.resolve(__dirname, './src/services'),
         '@/utils': path.resolve(__dirname, './src/utils'),
         '@/types': path.resolve(__dirname, './src/types'),
+        '@/workers': path.resolve(__dirname, './src/workers'),
       },
+    },
+    worker: {
+      format: 'es',
     },
     server: {
       port: 3000,

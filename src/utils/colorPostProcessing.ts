@@ -1,4 +1,4 @@
-import type { Color } from '../types'
+import type { Color, SelectionMethod } from '../types'
 import {
   createColorFromHex,
   calculateLightness,
@@ -57,10 +57,6 @@ function clusterSimilarColors(colors: Color[], threshold: number): Color[][] {
   return clusters
 }
 
-/**
- * Тип метода выбора репрезентативных цветов
- */
-export type SelectionMethod = 'representative' | 'dominant'
 
 /**
  * Из каждого кластера цветов выбирает репрезентативные цвета.
