@@ -18,6 +18,7 @@ function ImageAnalysisPage() {
   const [colorCount, setColorCount] = useState<number>(16)
   const [selectionMethod, setSelectionMethod] = useState<SelectionMethod>('representative')
   const [similarityThreshold, setSimilarityThreshold] = useState<number>(20)
+  const [achromaticThreshold, setAchromaticThreshold] = useState<number>(10)
   const [isProcessing, setIsProcessing] = useState(false)
   const [results, setResults] = useState<string[]>([])
   const [error, setError] = useState<string | null>(null)
@@ -94,7 +95,7 @@ function ImageAnalysisPage() {
         colorCount,
         selectionMethod,
         similarityThreshold,
-        achromaticThreshold: 10, // По умолчанию, будет настраиваться в задаче 1.3
+        achromaticThreshold,
       })
     } catch (err) {
       setIsProcessing(false)
@@ -236,6 +237,29 @@ function ImageAnalysisPage() {
                 />
                 <div className="image-analysis-page__slider-hint">
                   Меньше значение = больше цветов (более строгая группировка)
+                </div>
+              </div>
+
+              <div className="image-analysis-page__control-group">
+                <label
+                  htmlFor="achromatic-threshold"
+                  className="image-analysis-page__label"
+                  title="Порог 'серого': цвета с насыщенностью ниже этого значения считаются серыми (ахроматическими) и сортируются отдельно от цветных."
+                >
+                  Порог "серого": {achromaticThreshold}
+                </label>
+                <input
+                  type="range"
+                  id="achromatic-threshold"
+                  min="0"
+                  max="50"
+                  value={achromaticThreshold}
+                  onChange={(e) => setAchromaticThreshold(Number(e.target.value))}
+                  className="image-analysis-page__slider"
+                  disabled={isProcessing}
+                />
+                <div className="image-analysis-page__slider-hint">
+                  Меньше значение = больше цветов считаются серыми
                 </div>
               </div>
 
