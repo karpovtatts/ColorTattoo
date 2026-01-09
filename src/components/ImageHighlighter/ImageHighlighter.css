@@ -1,0 +1,23 @@
+.image-highlighter {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  width: 100%;
+}
+
+.image-highlighter__image {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  width: 100%;
+}
+
+.image-highlighter__overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+

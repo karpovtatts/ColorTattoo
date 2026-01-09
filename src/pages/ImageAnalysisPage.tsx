@@ -4,7 +4,8 @@ import Button from '@/components/Button/Button'
 import LoadingSpinner from '@/components/LoadingSpinner/LoadingSpinner'
 import Container from '@/components/Container/Container'
 import ColorDetailsModal from '@/components/ColorDetailsModal/ColorDetailsModal'
-import { processImageFile, createImagePreview } from '@/utils/imageProcessor'
+import ImageHighlighter from '@/components/ImageHighlighter/ImageHighlighter'
+import { processImageFile, createImagePreview, createColorPixelMapping } from '@/utils/imageProcessor'
 import { usePaletteContext } from '@/contexts/PaletteContext'
 import { createColorFromHex } from '@/utils/colorOperations'
 import type { SelectionMethod } from '@/types'
@@ -27,6 +28,9 @@ function ImageAnalysisPage() {
   const [selectedColorHex, setSelectedColorHex] = useState<string | null>(null)
   const [isColorDetailsModalOpen, setIsColorDetailsModalOpen] = useState(false)
   const [originalResults, setOriginalResults] = useState<string[]>([])
+  const [highlightedColorHex, setHighlightedColorHex] = useState<string | null>(null)
+  const [highlightedPixels, setHighlightedPixels] = useState<Array<{ x: number; y: number }>>([])
+  const imageCanvasRef = useRef<HTMLCanvasElement | null>(null)
   const { addColor } = usePaletteContext()
   const workerRef = useRef<Worker | null>(null)
 
@@ -92,7 +96,8 @@ function ImageAnalysisPage() {
 
     try {
       // Обработка изображения (в основном потоке, так как это быстро)
-      const { pixels } = await processImageFile(selectedFile)
+      const { pixels, canvas } = await processImageFile(selectedFile)
+      imageCanvasRef.current = canvas
 
       // Отправляем данные в Web Worker для обработки
       workerRef.current.postMessage({
@@ -119,6 +124,9 @@ function ImageAnalysisPage() {
     setResults([])
     setError(null)
     setHasAnalyzed(false)
+    setHighlightedColorHex(null)
+    setHighlightedPixels([])
+    imageCanvasRef.current = null
   }
 
   const resultsRef = useRef<HTMLDivElement>(null)
@@ -160,6 +168,24 @@ function ImageAnalysisPage() {
     setResults([...originalResults])
   }
 
+  const handleColorHover = (hex: string) => {
+    setHighlightedColorHex(hex)
+    if (imageCanvasRef.current) {
+      try {
+        const pixels = createColorPixelMapping(imageCanvasRef.current, hex, 40)
+        setHighlightedPixels(pixels)
+      } catch (error) {
+        console.error('Failed to create pixel mapping:', error)
+        setHighlightedPixels([])
+      }
+    }
+  }
+
+  const handleColorLeave = () => {
+    setHighlightedColorHex(null)
+    setHighlightedPixels([])
+  }
+
   return (
     <Container>
       <div className="image-analysis-page">
@@ -179,11 +205,14 @@ function ImageAnalysisPage() {
           <>
             <div className="image-analysis-page__preview-section">
               <div className="image-analysis-page__image-wrapper">
-                <img
-                  src={imagePreview || ''}
-                  alt="Загруженное изображение"
-                  className="image-analysis-page__image"
-                />
+                {imagePreview && (
+                  <ImageHighlighter
+                    imageSrc={imagePreview}
+                    highlightedPixels={highlightedPixels}
+                    highlightColor="rgba(255, 255, 0, 0.6)"
+                    opacity={0.6}
+                  />
+                )}
                 <Button
                   variant="outline"
                   size="sm"
@@ -370,6 +399,8 @@ function ImageAnalysisPage() {
                     <div
                       key={`${hex}-${index}`}
                       className="image-analysis-page__result-card"
+                      onMouseEnter={() => handleColorHover(hex)}
+                      onMouseLeave={handleColorLeave}
                     >
                       <div className="image-analysis-page__color-preview-wrapper">
                         <div

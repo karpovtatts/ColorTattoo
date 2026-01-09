@@ -148,3 +148,51 @@ export function createImagePreview(file: File): Promise<string> {
   })
 }
 
+/**
+ * Создание mapping цвета к пикселям изображения
+ * @param canvas - Canvas элемент с изображением
+ * @param colorHex - HEX цвет для поиска
+ * @param threshold - Порог схожести (максимальное расстояние в RGB)
+ * @returns Массив координат пикселей {x, y}
+ */
+export function createColorPixelMapping(
+  canvas: HTMLCanvasElement,
+  colorHex: string,
+  threshold: number = 30
+): Array<{ x: number; y: number }> {
+  const ctx = canvas.getContext('2d')
+  if (!ctx) {
+    throw new Error('Не удалось получить контекст canvas')
+  }
+
+  // Парсим HEX цвет
+  const hex = colorHex.replace('#', '')
+  const r = parseInt(hex.substring(0, 2), 16)
+  const g = parseInt(hex.substring(2, 4), 16)
+  const b = parseInt(hex.substring(4, 6), 16)
+
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+  const pixels: Array<{ x: number; y: number }> = []
+
+  // Проходим по всем пикселям
+  for (let i = 0; i < imageData.data.length; i += 4) {
+    const pixelR = imageData.data[i]
+    const pixelG = imageData.data[i + 1]
+    const pixelB = imageData.data[i + 2]
+
+    // Вычисляем расстояние в RGB пространстве
+    const distance = Math.sqrt(
+      Math.pow(pixelR - r, 2) + Math.pow(pixelG - g, 2) + Math.pow(pixelB - b, 2)
+    )
+
+    if (distance <= threshold) {
+      const index = i / 4
+      const x = index % canvas.width
+      const y = Math.floor(index / canvas.width)
+      pixels.push({ x, y })
+    }
+  }
+
+  return pixels
+}
+
