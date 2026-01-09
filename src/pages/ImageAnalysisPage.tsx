@@ -176,22 +176,53 @@ function ImageAnalysisPage() {
                 <label
                   htmlFor="color-count"
                   className="image-analysis-page__label"
+                  title="Количество цветов для извлечения из изображения. Больше цветов = дольше обработка, но более детальный анализ."
                 >
-                  Количество цветов:
+                  Количество цветов: {colorCount}
                 </label>
-                <select
-                  id="color-count"
-                  value={colorCount}
-                  onChange={(e) => setColorCount(Number(e.target.value))}
-                  className="image-analysis-page__select"
-                  disabled={isProcessing}
-                >
-                  {COLOR_COUNT_OPTIONS.map((count) => (
-                    <option key={count} value={count}>
-                      {count}
-                    </option>
-                  ))}
-                </select>
+                <div className="image-analysis-page__slider-with-input">
+                  <input
+                    type="range"
+                    id="color-count"
+                    min="8"
+                    max="120"
+                    step="8"
+                    value={colorCount}
+                    onChange={(e) => {
+                      const value = Number(e.target.value)
+                      // Округляем до ближайшего значения из опций
+                      const nearest = COLOR_COUNT_OPTIONS.reduce((prev, curr) =>
+                        Math.abs(curr - value) < Math.abs(prev - value) ? curr : prev
+                      )
+                      setColorCount(nearest)
+                    }}
+                    className="image-analysis-page__slider"
+                    disabled={isProcessing}
+                    list="color-count-options"
+                  />
+                  <datalist id="color-count-options">
+                    {COLOR_COUNT_OPTIONS.map((count) => (
+                      <option key={count} value={count} label={count.toString()} />
+                    ))}
+                  </datalist>
+                  <input
+                    type="number"
+                    min="8"
+                    max="120"
+                    value={colorCount}
+                    onChange={(e) => {
+                      const value = Number(e.target.value)
+                      if (value >= 8 && value <= 120) {
+                        setColorCount(value)
+                      }
+                    }}
+                    className="image-analysis-page__number-input"
+                    disabled={isProcessing}
+                  />
+                </div>
+                <div className="image-analysis-page__slider-hint">
+                  Больше цветов = дольше обработка, но более детальный анализ
+                </div>
               </div>
 
               <div className="image-analysis-page__control-group">
