@@ -41,6 +41,22 @@
   padding: var(--spacing-md);
   background-color: var(--color-bg-primary);
   border-radius: var(--radius-md);
+  position: relative;
+}
+
+.recipe-display__ingredient-order {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  background-color: var(--color-primary);
+  color: white;
+  border-radius: 50%;
+  font-weight: 600;
+  font-size: 0.875rem;
+  flex-shrink: 0;
 }
 
 .recipe-display__ingredient-info {

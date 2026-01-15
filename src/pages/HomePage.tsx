@@ -9,6 +9,7 @@ import {
   Button,
 } from '@/components'
 import { useColorContext } from '@/contexts/ColorContext'
+import { usePaletteContext } from '@/contexts/PaletteContext'
 import { createColorFromHex, createColorFromRgb } from '@/utils/colorOperations'
 import { validateHex } from '@/utils/colorConversions'
 import { debounce } from '@/utils/debounce'
@@ -17,6 +18,7 @@ import './HomePage.css'
 function HomePage() {
   const navigate = useNavigate()
   const { targetColor, setTargetColor } = useColorContext()
+  const { validation } = usePaletteContext()
 
   const [hexValue, setHexValue] = useState(targetColor?.hex || '')
   const [rgbValue, setRgbValue] = useState(
@@ -95,12 +97,17 @@ function HomePage() {
   }
 
   const handleFindRecipe = () => {
+    if (!validation.isValid) {
+      navigate('/palette')
+      return
+    }
     if (targetColor) {
       navigate('/recipe')
     }
   }
 
   const isColorValid = targetColor !== null
+  const isPaletteValid = validation.isValid
 
   return (
     <Container>
@@ -158,9 +165,27 @@ function HomePage() {
               variant="primary"
               fullWidth
             >
-              Найти рецепт
+              {isPaletteValid ? 'Найти рецепт' : 'Сначала настроить палитру'}
             </Button>
           </div>
+
+          {!isPaletteValid && (
+            <div className="home-page__hint-block">
+              <p className="home-page__hint">
+                Шаг 1: добавьте в палитру те краски, которые у вас есть в наличии (бренды, названия, базовые цвета).
+              </p>
+              <p className="home-page__hint">
+                Шаг 2: после настройки палитры задайте целевой цвет и вернитесь сюда за рецептом.
+              </p>
+              <Button
+                variant="outline"
+                fullWidth
+                onClick={() => navigate('/palette')}
+              >
+                Перейти к настройке палитры
+              </Button>
+            </div>
+          )}
 
           {!isColorValid && (
             <p className="home-page__hint">

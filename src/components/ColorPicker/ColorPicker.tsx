@@ -58,12 +58,25 @@ function ColorPicker({
             className="color-picker__cover"
             onClick={() => setIsOpen(false)}
           />
-          <SketchPicker
-            color={currentColor}
-            onChange={handleColorChange}
-            presetColors={presetColors}
-            disableAlpha
-          />
+          <div className="color-picker__panel">
+            <div className="color-picker__panel-header">
+              <span className="color-picker__panel-title">Выбор цвета</span>
+              <button
+                type="button"
+                className="color-picker__close"
+                onClick={() => setIsOpen(false)}
+                aria-label="Закрыть палитру"
+              >
+                ×
+              </button>
+            </div>
+            <SketchPicker
+              color={currentColor}
+              onChange={handleColorChange}
+              presetColors={presetColors}
+              disableAlpha
+            />
+          </div>
         </div>
       )}
     </div>

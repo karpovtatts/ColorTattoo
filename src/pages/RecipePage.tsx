@@ -228,22 +228,28 @@ function RecipePage() {
             {recipeResult.warnings.some((w) => w.type === 'unreachable') ? (
               <div className="recipe-page__unreachable">
                 <h2 className="recipe-page__section-title">
-                  Цветов для достижения в палитре нет
+                  ⚠️ Точное совпадение недостижимо
                 </h2>
+                <p className="recipe-page__unreachable-explanation">
+                  К сожалению, ваш целевой цвет не может быть точно получен из доступных цветов в палитре. 
+                  Ниже показан максимально близкий вариант, который можно получить при смешивании.
+                </p>
                 {recipeResult.warnings
                   .filter((w) => w.type === 'unreachable')
                   .map((warning, idx) => (
-                    <p key={idx} className="recipe-page__unreachable-explanation">
+                    <p key={idx} className="recipe-page__unreachable-explanation" style={{ fontStyle: 'italic', marginTop: '0.5rem' }}>
                       {warning.message}
                     </p>
                   ))}
-                <ColorComparison
-                  targetColor={targetColor}
-                  resultColor={recipeResult.recipe.resultColor}
-                  showDistance
-                  showLabels
-                  size="medium"
-                />
+                <div style={{ marginTop: '1.5rem' }}>
+                  <ColorComparison
+                    targetColor={targetColor}
+                    resultColor={recipeResult.recipe.resultColor}
+                    showDistance
+                    showLabels
+                    size="medium"
+                  />
+                </div>
               </div>
             ) : null}
 
@@ -252,9 +258,14 @@ function RecipePage() {
               <h2 className="recipe-page__section-title">Сравнение цветов</h2>
               <div className="recipe-page__info-note">
                 <p>
-                  <strong>Примечание:</strong> Смешивание эмулирует физические тату-краски
-                  (субтрактивная модель). Метрика DeltaE показывает перцептивное различие
-                  цветов, как их видит человеческий глаз.
+                  <strong>Как это работает:</strong> Система подбирает рецепт смешивания вашего целевого цвета 
+                  из цветов, доступных в вашей палитре. Если точное совпадение невозможно (цвет не находится 
+                  в палитре или не может быть получен смешиванием), показывается максимально близкий вариант.
+                </p>
+                <p style={{ marginTop: '0.75rem' }}>
+                  <strong>Примечание:</strong> Смешивание эмулирует физические тату-краски (субтрактивная модель). 
+                  Метрика DeltaE показывает, насколько близки цвета визуально: &lt; 2 — практически неотличимы, 
+                  2-5 — очень близко, 5-10 — похоже, &gt; 10 — заметная разница.
                 </p>
               </div>
               <ColorComparison
@@ -269,6 +280,19 @@ function RecipePage() {
             {/* Рецепт */}
             <div className="recipe-page__recipe">
               <h2 className="recipe-page__section-title">Рецепт смешивания</h2>
+              {recipeResult.recipe.ingredients.length > 1 && (
+                <div className="recipe-page__info-note" style={{ marginBottom: '1rem' }}>
+                  <p>
+                    <strong>Важно:</strong> Порядок добавления цветов имеет значение при смешивании тату-красок. 
+                    Добавляйте цвета последовательно в указанном порядке, тщательно перемешивая каждый новый цвет 
+                    с уже имеющейся смесью перед добавлением следующего.
+                  </p>
+                  <p style={{ marginTop: '0.5rem' }}>
+                    <strong>Про части и капли:</strong> пропорции указаны в условных частях. Удобно считать, что 1 часть ≈ 1 капля одинакового объёма. 
+                    Важно помнить, что реальные пропорции зависят от бренда, дисперсии пигмента, вязкости и техники набора краски.
+                  </p>
+                </div>
+              )}
               <RecipeDisplay
                 recipe={recipeResult.recipe}
                 getColorById={getColorById}
@@ -285,6 +309,29 @@ function RecipePage() {
                 analysis={recipeResult.analysis}
                 resultColor={recipeResult.recipe.resultColor}
               />
+            </div>
+
+            {/* Общая информация о смешивании и безопасности */}
+            <div className="recipe-page__info-note" style={{ marginTop: '1.5rem' }}>
+              <h2 className="recipe-page__section-title">Важно про смешивание красок</h2>
+              <ul>
+                <li>
+                  <strong>Аллергия:</strong> при смешивании разных пигментов растёт количество компонентов, а значит и риск аллергических реакций. 
+                  Используйте только проверенные бренды и не экспериментируйте на клиентах без тестов.
+                </li>
+                <li>
+                  <strong>Повторяемость оттенка:</strong> даже при схеме «24 части A и 1 часть B» сложно идеальное повторение — 
+                  учитывайте объём, способ набора капель, скорость перемешивания и особенности конкретных партий красок.
+                </li>
+                <li>
+                  <strong>Удаление тату:</strong> сложные миксы из нескольких пигментов, особенно с большим количеством тёмных/холодных компонентов, 
+                  как правило, сложнее выводятся лазером и могут уходить неравномерно.
+                </li>
+                <li>
+                  <strong>Про бренды и дисперсию:</strong> формулы в сервисе математические и не «знают» точную химию World Famous, Limitless или других марок. 
+                  Используйте расчёт как ориентир, а финальный оттенок всегда уточняйте на палитре и на латексе/типсе.
+                </li>
+              </ul>
             </div>
 
             {/* Предупреждения */}

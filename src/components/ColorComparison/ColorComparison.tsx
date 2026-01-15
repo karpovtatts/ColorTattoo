@@ -39,14 +39,14 @@ function ColorComparison({
         <div className="color-comparison__arrow">→</div>
         <div className="color-comparison__item">
           {showLabels && (
-            <h3 className="color-comparison__label">Результирующий цвет</h3>
+            <h3 className="color-comparison__label">Цвет после смешивания</h3>
           )}
           <ColorPreview
             color={resultColor}
             size={size}
             showHex
             showRgb
-            label={showLabels ? undefined : 'Результат'}
+            label={showLabels ? undefined : 'После смешивания'}
           />
         </div>
       </div>

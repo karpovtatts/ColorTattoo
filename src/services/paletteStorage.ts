@@ -40,9 +40,15 @@ export function loadPalette(): UserPalette | null {
  */
 export function getDefaultPalette(): UserPalette {
   const defaultColors: Color[] = [
+    // Базовые хроматические цвета
     createColorFromHex('#FF0000', 'red-1', 'Красный'),
     createColorFromHex('#0000FF', 'blue-1', 'Синий'),
     createColorFromHex('#FFFF00', 'yellow-1', 'Жёлтый'),
+    // Маджента как отдельный базовый канал для фиолетов/сиреневых
+    createColorFromHex('#FF00FF', 'magenta-1', 'Маджента'),
+    // Акроматические для разбавления/затемнения
+    createColorFromHex('#FFFFFF', 'white-1', 'Белый'),
+    createColorFromHex('#000000', 'black-1', 'Чёрный'),
   ]
 
   return {

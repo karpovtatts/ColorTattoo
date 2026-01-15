@@ -7,7 +7,8 @@ import ColorDetailsModal from '@/components/ColorDetailsModal/ColorDetailsModal'
 import ImageHighlighter from '@/components/ImageHighlighter/ImageHighlighter'
 import { processImageFile, createImagePreview, createColorPixelMapping } from '@/utils/imageProcessor'
 import { usePaletteContext } from '@/contexts/PaletteContext'
-import { createColorFromHex } from '@/utils/colorOperations'
+import { createColorFromHex, getColorNameFromHue } from '@/utils/colorOperations'
+import { rgbToCmyk } from '@/utils/colorConversions'
 import type { SelectionMethod } from '@/types'
 import ColorAnalysisWorker from '@/workers/colorAnalysis.worker?worker'
 import './ImageAnalysisPage.css'
@@ -29,6 +30,7 @@ function ImageAnalysisPage() {
   const [isColorDetailsModalOpen, setIsColorDetailsModalOpen] = useState(false)
   const [originalResults, setOriginalResults] = useState<string[]>([])
   const [highlightedPixels, setHighlightedPixels] = useState<Array<{ x: number; y: number }>>([])
+  const [expandedColorHexes, setExpandedColorHexes] = useState<Set<string>>(new Set())
   const imageCanvasRef = useRef<HTMLCanvasElement | null>(null)
   const { addColor } = usePaletteContext()
   const workerRef = useRef<Worker | null>(null)
@@ -156,6 +158,19 @@ function ImageAnalysisPage() {
   const handleCloseColorDetails = () => {
     setIsColorDetailsModalOpen(false)
     setSelectedColorHex(null)
+  }
+
+  const handleToggleColorInfo = (hex: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setExpandedColorHexes((prev) => {
+      const next = new Set(prev)
+      if (next.has(hex)) {
+        next.delete(hex)
+      } else {
+        next.add(hex)
+      }
+      return next
+    })
   }
 
   const handleRemoveColor = (hexToRemove: string) => {
@@ -391,61 +406,114 @@ function ImageAnalysisPage() {
                   )}
                 </div>
                 <div className="image-analysis-page__results-grid">
-                  {results.map((hex, index) => (
-                    <div
-                      key={`${hex}-${index}`}
-                      className="image-analysis-page__result-card"
-                      onMouseEnter={() => handleColorHover(hex)}
-                      onMouseLeave={handleColorLeave}
-                    >
-                      <div className="image-analysis-page__color-preview-wrapper">
-                        <div
-                          className="image-analysis-page__color-preview"
-                          style={{ backgroundColor: hex }}
-                          title={`${hex} - Кликните для деталей`}
-                          onClick={() => handleColorClick(hex)}
-                        />
-                        <button
-                          className="image-analysis-page__remove-color-btn"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleRemoveColor(hex)
-                          }}
-                          title="Удалить цвет из результатов"
-                          aria-label="Удалить цвет"
-                        >
-                          ×
-                        </button>
-                      </div>
-                      <div className="image-analysis-page__result-content">
-                        <div
-                          className="image-analysis-page__ink-hex"
-                          onClick={() => handleColorClick(hex)}
-                          style={{ cursor: 'pointer' }}
-                          title="Кликните для деталей"
-                        >
-                          {hex}
-                        </div>
-                        <div className="image-analysis-page__result-actions" style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                          <Button
-                            size="sm"
-                            onClick={() => handleAddToPalette(hex)}
-                            title="Добавить этот цвет в палитру"
+                  {results.map((hex, index) => {
+                    const isExpanded = expandedColorHexes.has(hex)
+                    let colorInfo = null
+                    try {
+                      const color = createColorFromHex(hex)
+                      colorInfo = color
+                    } catch (e) {
+                      console.error('Failed to parse color:', hex, e)
+                    }
+
+                    return (
+                      <div
+                        key={`${hex}-${index}`}
+                        className="image-analysis-page__result-card"
+                        onMouseEnter={() => handleColorHover(hex)}
+                        onMouseLeave={handleColorLeave}
+                        onClick={() => handleColorClick(hex)}
+                      >
+                        <div className="image-analysis-page__color-preview-wrapper">
+                          <div
+                            className="image-analysis-page__color-preview"
+                            style={{ backgroundColor: hex, cursor: 'pointer' }}
+                            title={`${hex} - Кликните для детальной информации`}
+                          />
+                          <button
+                            className="image-analysis-page__remove-color-btn"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleRemoveColor(hex)
+                            }}
+                            title="Удалить цвет из результатов"
+                            aria-label="Удалить цвет"
                           >
-                            ➕ В палитру
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleCopyHex(hex)}
-                            title="Скопировать HEX"
-                          >
-                            📋 Копировать HEX
-                          </Button>
+                            ×
+                          </button>
+                        </div>
+                        <div className="image-analysis-page__result-content">
+                          <div className="image-analysis-page__ink-hex">
+                            {hex}
+                          </div>
+                          {isExpanded && colorInfo && (
+                            <div className="image-analysis-page__color-details">
+                              <div className="image-analysis-page__color-detail-item">
+                                <span className="image-analysis-page__color-detail-label">RGB:</span>
+                                <code className="image-analysis-page__color-detail-value">
+                                  rgb({colorInfo.rgb.r}, {colorInfo.rgb.g}, {colorInfo.rgb.b})
+                                </code>
+                              </div>
+                              <div className="image-analysis-page__color-detail-item">
+                                <span className="image-analysis-page__color-detail-label">HSL:</span>
+                                <code className="image-analysis-page__color-detail-value">
+                                  hsl({colorInfo.hsl.h}, {colorInfo.hsl.s}%, {colorInfo.hsl.l}%)
+                                </code>
+                              </div>
+                              {(() => {
+                                const cmyk = rgbToCmyk(colorInfo.rgb)
+                                return (
+                                  <div className="image-analysis-page__color-detail-item">
+                                    <span className="image-analysis-page__color-detail-label">CMYK:</span>
+                                    <code className="image-analysis-page__color-detail-value">
+                                      cmyk({cmyk.c.toFixed(1)}%, {cmyk.m.toFixed(1)}%, {cmyk.y.toFixed(1)}%, {cmyk.k.toFixed(1)}%)
+                                    </code>
+                                  </div>
+                                )
+                              })()}
+                              <div className="image-analysis-page__color-detail-item">
+                                <span className="image-analysis-page__color-detail-label">Название:</span>
+                                <span className="image-analysis-page__color-detail-value">
+                                  {getColorNameFromHue(colorInfo.hsl.h)}
+                                </span>
+                              </div>
+                            </div>
+                          )}
+                          <div className="image-analysis-page__result-actions" style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={(e) => handleToggleColorInfo(hex, e)}
+                              title={isExpanded ? "Скрыть информацию о цвете" : "Показать информацию о цвете"}
+                            >
+                              {isExpanded ? '🔽 Скрыть инфо' : 'ℹ️ Инфо о цвете'}
+                            </Button>
+                            <Button
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleAddToPalette(hex)
+                              }}
+                              title="Добавить этот цвет в палитру"
+                            >
+                              ➕ В палитру
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleCopyHex(hex)
+                              }}
+                              title="Скопировать HEX"
+                            >
+                              📋 Копировать HEX
+                            </Button>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               </div>
             )}

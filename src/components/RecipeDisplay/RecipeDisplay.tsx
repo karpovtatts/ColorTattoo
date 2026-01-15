@@ -30,12 +30,17 @@ function RecipeDisplay({
         <div className="recipe-display__ingredients">
           <h3 className="recipe-display__ingredients-title">Ингредиенты:</h3>
           <div className="recipe-display__ingredients-list">
-            {recipe.ingredients.map((ingredient) => {
+            {recipe.ingredients.map((ingredient, index) => {
               const color = getColorById(ingredient.colorId)
               if (!color) return null
 
               return (
                 <div key={ingredient.colorId} className="recipe-display__ingredient">
+                  {recipe.ingredients.length > 1 && (
+                    <div className="recipe-display__ingredient-order">
+                      {index + 1}
+                    </div>
+                  )}
                   <ColorSwatch color={color} size="small" />
                   <div className="recipe-display__ingredient-info">
                     <span className="recipe-display__ingredient-name">

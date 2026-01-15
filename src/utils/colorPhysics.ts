@@ -77,3 +77,74 @@ export function mixColorsSubtractive(
   return normalizeRgb(cmykToRgb(mixedCmyk))
 }
 
+/**
+ * Последовательное субтрактивное смешивание цветов с учетом порядка
+ * 
+ * При последовательном смешивании результат может отличаться, так как каждый
+ * следующий цвет смешивается с уже полученной смесью, а не со всеми исходными цветами.
+ * 
+ * Порядок важен, особенно при работе с тату-красками, где смешивание происходит постепенно.
+ * 
+ * @param ingredients - Массив ингредиентов с цветами и пропорциями (в порядке добавления)
+ * @param getColorById - Функция для получения цвета по ID
+ * @returns Результирующий RGB цвет
+ */
+export function mixColorsSubtractiveSequential(
+  ingredients: RecipeIngredient[],
+  getColorById: (id: string) => Color | undefined
+): RGB {
+  if (ingredients.length === 0) {
+    throw new Error('Cannot mix colors: no ingredients provided')
+  }
+
+  if (ingredients.length === 1) {
+    const color = getColorById(ingredients[0].colorId)
+    if (!color) {
+      throw new Error(`Color not found: ${ingredients[0].colorId}`)
+    }
+    return normalizeRgb(color.rgb)
+  }
+
+  // Начинаем с первого цвета
+  let currentRgb = normalizeRgb(getColorById(ingredients[0].colorId)!.rgb)
+  let currentTotalWeight = ingredients[0].proportion
+
+  // Последовательно смешиваем с остальными цветами
+  for (let i = 1; i < ingredients.length; i++) {
+    const color = getColorById(ingredients[i].colorId)
+    if (!color) {
+      throw new Error(`Color not found: ${ingredients[i].colorId}`)
+    }
+
+    const newWeight = ingredients[i].proportion
+    const totalWeight = currentTotalWeight + newWeight
+
+    // Конвертируем текущий результат и новый цвет в CMYK
+    const currentCmyk = rgbToCmyk(currentRgb)
+    const newCmyk = rgbToCmyk(color.rgb)
+
+    // Смешиваем с учетом весов (взвешенное среднее)
+    // Новый цвет добавляется к уже существующей смеси
+    const mixedCmyk = {
+      c: (currentCmyk.c * currentTotalWeight + newCmyk.c * newWeight) / totalWeight,
+      m: (currentCmyk.m * currentTotalWeight + newCmyk.m * newWeight) / totalWeight,
+      y: (currentCmyk.y * currentTotalWeight + newCmyk.y * newWeight) / totalWeight,
+      k: (currentCmyk.k * currentTotalWeight + newCmyk.k * newWeight) / totalWeight,
+    }
+
+    // Ограничиваем значения
+    const clampedCmyk = {
+      c: Math.max(0, Math.min(100, mixedCmyk.c)),
+      m: Math.max(0, Math.min(100, mixedCmyk.m)),
+      y: Math.max(0, Math.min(100, mixedCmyk.y)),
+      k: Math.max(0, Math.min(100, mixedCmyk.k)),
+    }
+
+    // Обновляем текущий результат
+    currentRgb = normalizeRgb(cmykToRgb(clampedCmyk))
+    currentTotalWeight = totalWeight
+  }
+
+  return currentRgb
+}
+

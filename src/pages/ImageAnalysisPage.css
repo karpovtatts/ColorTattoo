@@ -241,7 +241,7 @@
 }
 
 .image-analysis-page__result-card:hover {
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   border-color: var(--color-border-hover);
   transform: translateY(-2px);
 }
@@ -293,12 +293,7 @@
   width: 100%;
   height: 80px;
   border-bottom: 1px solid var(--color-border);
-  cursor: pointer;
   transition: opacity 0.2s;
-}
-
-.image-analysis-page__color-preview:hover {
-  opacity: 0.9;
 }
 
 .image-analysis-page__warning-icon {
@@ -364,12 +359,50 @@
   border-radius: var(--radius-sm);
   display: inline-block;
   width: fit-content;
-  transition: all 0.2s;
 }
 
-.image-analysis-page__ink-hex:hover {
-  color: var(--color-primary);
+.image-analysis-page__color-details {
+  margin-top: var(--spacing-sm);
+  padding: var(--spacing-sm);
   background-color: var(--color-surface-hover);
+  border-radius: var(--radius-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    max-height: 500px;
+    transform: translateY(0);
+  }
+}
+
+.image-analysis-page__color-detail-item {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-xs);
+  font-size: 0.8125rem;
+}
+
+.image-analysis-page__color-detail-label {
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  min-width: 60px;
+}
+
+.image-analysis-page__color-detail-value {
+  font-family: 'Courier New', monospace;
+  color: var(--color-text);
+  word-break: break-all;
+  flex: 1;
 }
 
 .image-analysis-page__warning-details {

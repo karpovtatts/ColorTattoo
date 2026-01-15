@@ -12,7 +12,7 @@ import {
   getComplementaryColor,
   getColorNameFromHue,
 } from '@/utils/colorOperations'
-import { mixColorsSubtractive } from '@/utils/colorPhysics'
+import { mixColorsSubtractive, mixColorsSubtractiveSequential } from '@/utils/colorPhysics'
 import { calculateColorDistancePerceptualFull } from '@/utils/colorMetric'
 import { analyzeColorAndRecipe } from './colorAnalysis'
 
@@ -287,6 +287,8 @@ export function findRecipe(
 
   // Для хроматических цветов исключаем черные чернила из палитры
   // Это гарантирует, что алгоритм не будет использовать черный для затемнения
+  // БЕЛЫЙ цвет НЕ исключается - он используется для осветления светлых цветов
+  // Алгоритм автоматически подберет белый, если целевой цвет светлый и белый есть в палитре
   let usablePalette = palette.colors
   if (isTargetColorful) {
     usablePalette = palette.colors.filter((color) => !isBlackInk(color))
@@ -348,13 +350,40 @@ export function findRecipe(
     throw new Error('Не удалось найти рецепт. Проверьте палитру.')
   }
 
+  // Оптимизируем порядок ингредиентов
+  // Для тату-красок рекомендуется: сначала базовый/основной цвет (самая большая доля),
+  // затем корректирующие цвета (меньшие доли)
+  // Это обеспечивает более предсказуемый результат при смешивании
+  const optimizedIngredients = optimizeIngredientOrder(
+    bestResult.ingredients,
+    targetColor,
+    getColorById
+  )
+
+  // Проверяем, влияет ли порядок на результат (для информации)
+  // В математической модели CMYK это не должно сильно влиять, но проверим
+  let finalResultColor = bestResult.resultColor
+  try {
+    const sequentialResult = mixColorsSubtractiveSequential(optimizedIngredients, getColorById)
+    const sequentialColor = createColorFromRgb(sequentialResult)
+    const sequentialDistance = calculateColorDistancePerceptualFull(targetColor, sequentialColor)
+    
+    // Если последовательное смешивание дает лучший результат, используем его
+    if (sequentialDistance < bestResult.distance) {
+      finalResultColor = sequentialColor
+    }
+  } catch (e) {
+    // Если ошибка при последовательном смешивании, используем исходный результат
+    console.warn('Failed to test sequential mixing:', e)
+  }
+
   // Всегда создаем рецепт, даже если цвет недостижим
   // Пользователь должен видеть, какие цвета нужно смешивать
   const recipe: Recipe = {
     id: `recipe-${Date.now()}`,
     targetColor,
-    resultColor: bestResult.resultColor,
-    ingredients: bestResult.ingredients,
+    resultColor: finalResultColor,
+    ingredients: optimizedIngredients, // Используем оптимизированный порядок
     createdAt: new Date(),
     updatedAt: new Date(),
   }
@@ -389,6 +418,49 @@ export function findRecipe(
     isExactMatch,
     distance: bestResult.distance,
   }
+}
+
+/**
+ * Оптимизация порядка ингредиентов для лучшего результата смешивания
+ * Рекомендуемый порядок: сначала основной цвет (самая большая доля), затем корректирующие
+ * 
+ * @param ingredients - Ингредиенты рецепта
+ * @param targetColor - Целевой цвет (для определения, какой цвет ближе к цели)
+ * @param getColorById - Функция для получения цвета по ID
+ * @returns Ингредиенты в оптимальном порядке
+ */
+function optimizeIngredientOrder(
+  ingredients: RecipeIngredient[],
+  targetColor: Color,
+  getColorById: (id: string) => Color | undefined
+): RecipeIngredient[] {
+  if (ingredients.length <= 1) {
+    return ingredients
+  }
+
+  // Сортируем по убыванию пропорции (сначала основные цвета)
+  // Если пропорции равны, приоритет отдаем цвету, который ближе к целевому
+  const sorted = [...ingredients].sort((a, b) => {
+    // Сначала по пропорции (убывание)
+    if (Math.abs(a.proportion - b.proportion) > 0.001) {
+      return b.proportion - a.proportion
+    }
+    
+    // Если пропорции равны, сортируем по близости к целевому цвету
+    const colorA = getColorById(a.colorId)
+    const colorB = getColorById(b.colorId)
+    
+    if (!colorA || !colorB) {
+      return 0
+    }
+    
+    const distanceA = calculateColorDistancePerceptualFull(targetColor, colorA)
+    const distanceB = calculateColorDistancePerceptualFull(targetColor, colorB)
+    
+    return distanceA - distanceB
+  })
+
+  return sorted
 }
 
 /**

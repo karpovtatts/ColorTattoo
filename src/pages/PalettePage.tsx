@@ -5,6 +5,9 @@ import ColorSwatch from '@/components/ColorSwatch/ColorSwatch'
 import AddColorModal from '@/components/AddColorModal/AddColorModal'
 import ConfirmDialog from '@/components/ConfirmDialog/ConfirmDialog'
 import { usePaletteContext } from '@/contexts/PaletteContext'
+import { createColorFromHex } from '@/utils/colorOperations'
+import worldFamous from '@/data/brands/world-famous.json'
+import limitless from '@/data/brands/limitless.json'
 import { useConfirm } from '@/hooks/useConfirm'
 import type { Color } from '@/types'
 import './PalettePage.css'
@@ -23,6 +26,30 @@ function PalettePage() {
   const { confirmState, handleConfirm, handleCancel, confirm } = useConfirm()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingColor, setEditingColor] = useState<Color | null>(null)
+
+  const importBrandPalette = async (brand: 'world-famous' | 'limitless') => {
+    const source = brand === 'world-famous' ? worldFamous : limitless
+
+    const result = await confirm({
+      title: 'Добавить палитру бренда?',
+      message:
+        brand === 'world-famous'
+          ? 'Будут добавлены основные цвета бренда World Famous в текущую палитру. Уже существующие цвета сохранятся.'
+          : 'Будут добавлены основные цвета бренда Limitless в текущую палитру. Уже существующие цвета сохранятся.',
+      confirmText: 'Добавить',
+      cancelText: 'Отмена',
+      variant: 'warning',
+    })
+
+    if (!result) return
+
+    const newColors: Color[] = source.map((ink) =>
+      createColorFromHex(ink.hex, ink.id, `${ink.brand} · ${ink.name}`)
+    )
+
+    // Просто дописываем цвета; возможные дубликаты пользователь может подчистить вручную
+    newColors.forEach((c) => addColor(c))
+  }
 
   const handleAddColor = () => {
     setEditingColor(null)
@@ -100,10 +127,35 @@ function PalettePage() {
               Добавьте цвета, которые у вас есть в наличии. Минимум 2 цвета
               для работы приложения.
             </p>
+            <p className="palette-page__description">
+              Для удобства можно сразу подгрузить базовые наборы популярных брендов и затем удалить лишние цвета.
+            </p>
           </div>
           <div className="palette-page__actions">
             <Button variant="primary" onClick={handleAddColor}>
               + Добавить цвет
+            </Button>
+          </div>
+        </div>
+
+        <div className="palette-page__brand-presets">
+          <span className="palette-page__brand-presets-label">
+            Быстрое заполнение из брендов:
+          </span>
+          <div className="palette-page__brand-presets-buttons">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => importBrandPalette('world-famous')}
+            >
+              World Famous (основные)
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => importBrandPalette('limitless')}
+            >
+              Limitless (основные)
             </Button>
           </div>
         </div>
