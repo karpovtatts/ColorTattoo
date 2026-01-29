@@ -213,7 +213,7 @@ function ImageAnalysisPage() {
         )}
 
         {selectedFile && (
-          <>
+          <div className="image-analysis-page__layout">
             <div className="image-analysis-page__preview-section">
               <div className="image-analysis-page__image-wrapper">
                 {imagePreview && (
@@ -235,289 +235,291 @@ function ImageAnalysisPage() {
               </div>
             </div>
 
-            <div className="image-analysis-page__controls">
-              <div className="image-analysis-page__control-group">
-                <label
-                  htmlFor="color-count"
-                  className="image-analysis-page__label"
-                  title="Количество цветов для извлечения из изображения. Больше цветов = дольше обработка, но более детальный анализ."
-                >
-                  Количество цветов: {colorCount}
-                </label>
-                <div className="image-analysis-page__slider-with-input">
+            <div className="image-analysis-page__content-section">
+              <div className="image-analysis-page__controls">
+                <div className="image-analysis-page__control-group">
+                  <label
+                    htmlFor="color-count"
+                    className="image-analysis-page__label"
+                    title="Количество цветов для извлечения из изображения. Больше цветов = дольше обработка, но более детальный анализ."
+                  >
+                    Количество цветов: {colorCount}
+                  </label>
+                  <div className="image-analysis-page__slider-with-input">
+                    <input
+                      type="range"
+                      id="color-count"
+                      min="8"
+                      max="120"
+                      step="8"
+                      value={colorCount}
+                      onChange={(e) => {
+                        const value = Number(e.target.value)
+                        // Округляем до ближайшего значения из опций
+                        const nearest = COLOR_COUNT_OPTIONS.reduce((prev, curr) =>
+                          Math.abs(curr - value) < Math.abs(prev - value) ? curr : prev
+                        )
+                        setColorCount(nearest)
+                      }}
+                      className="image-analysis-page__slider"
+                      disabled={isProcessing}
+                      list="color-count-options"
+                    />
+                    <datalist id="color-count-options">
+                      {COLOR_COUNT_OPTIONS.map((count) => (
+                        <option key={count} value={count} label={count.toString()} />
+                      ))}
+                    </datalist>
+                    <input
+                      type="number"
+                      min="8"
+                      max="120"
+                      value={colorCount}
+                      onChange={(e) => {
+                        const value = Number(e.target.value)
+                        if (value >= 8 && value <= 120) {
+                          setColorCount(value)
+                        }
+                      }}
+                      className="image-analysis-page__number-input"
+                      disabled={isProcessing}
+                    />
+                  </div>
+                  <div className="image-analysis-page__slider-hint">
+                    Больше цветов = дольше обработка, но более детальный анализ
+                  </div>
+                </div>
+
+                <div className="image-analysis-page__control-group">
+                  <label
+                    htmlFor="selection-method"
+                    className="image-analysis-page__label"
+                  >
+                    Метод анализа:
+                  </label>
+                  <select
+                    id="selection-method"
+                    value={selectionMethod}
+                    onChange={(e) => setSelectionMethod(e.target.value as SelectionMethod)}
+                    className="image-analysis-page__select"
+                    disabled={isProcessing}
+                  >
+                    <option value="representative">
+                      Репрезентативные (художественный)
+                    </option>
+                    <option value="dominant">
+                      Доминирующие (по площади)
+                    </option>
+                  </select>
+                </div>
+
+                <div className="image-analysis-page__control-group">
+                  <label
+                    htmlFor="similarity-threshold"
+                    className="image-analysis-page__label"
+                    title="Порог схожести (Delta E): чем меньше значение, тем более похожие цвета группируются вместе. Меньшие значения дают больше цветов, большие - меньше."
+                  >
+                    Порог схожести: {similarityThreshold}
+                  </label>
                   <input
                     type="range"
-                    id="color-count"
-                    min="8"
-                    max="120"
-                    step="8"
-                    value={colorCount}
-                    onChange={(e) => {
-                      const value = Number(e.target.value)
-                      // Округляем до ближайшего значения из опций
-                      const nearest = COLOR_COUNT_OPTIONS.reduce((prev, curr) =>
-                        Math.abs(curr - value) < Math.abs(prev - value) ? curr : prev
-                      )
-                      setColorCount(nearest)
-                    }}
+                    id="similarity-threshold"
+                    min="5"
+                    max="50"
+                    value={similarityThreshold}
+                    onChange={(e) => setSimilarityThreshold(Number(e.target.value))}
                     className="image-analysis-page__slider"
                     disabled={isProcessing}
-                    list="color-count-options"
                   />
-                  <datalist id="color-count-options">
-                    {COLOR_COUNT_OPTIONS.map((count) => (
-                      <option key={count} value={count} label={count.toString()} />
-                    ))}
-                  </datalist>
+                  <div className="image-analysis-page__slider-hint">
+                    Меньше значение = больше цветов (более строгая группировка)
+                  </div>
+                </div>
+
+                <div className="image-analysis-page__control-group">
+                  <label
+                    htmlFor="achromatic-threshold"
+                    className="image-analysis-page__label"
+                    title="Порог 'серого': цвета с насыщенностью ниже этого значения считаются серыми (ахроматическими) и сортируются отдельно от цветных."
+                  >
+                    Порог "серого": {achromaticThreshold}
+                  </label>
                   <input
-                    type="number"
-                    min="8"
-                    max="120"
-                    value={colorCount}
-                    onChange={(e) => {
-                      const value = Number(e.target.value)
-                      if (value >= 8 && value <= 120) {
-                        setColorCount(value)
-                      }
-                    }}
-                    className="image-analysis-page__number-input"
+                    type="range"
+                    id="achromatic-threshold"
+                    min="0"
+                    max="50"
+                    value={achromaticThreshold}
+                    onChange={(e) => setAchromaticThreshold(Number(e.target.value))}
+                    className="image-analysis-page__slider"
                     disabled={isProcessing}
                   />
+                  <div className="image-analysis-page__slider-hint">
+                    Меньше значение = больше цветов считаются серыми
+                  </div>
                 </div>
-                <div className="image-analysis-page__slider-hint">
-                  Больше цветов = дольше обработка, но более детальный анализ
-                </div>
-              </div>
 
-              <div className="image-analysis-page__control-group">
-                <label
-                  htmlFor="selection-method"
-                  className="image-analysis-page__label"
-                >
-                  Метод анализа:
-                </label>
-                <select
-                  id="selection-method"
-                  value={selectionMethod}
-                  onChange={(e) => setSelectionMethod(e.target.value as SelectionMethod)}
-                  className="image-analysis-page__select"
+                <Button
+                  onClick={handleAnalyze}
                   disabled={isProcessing}
+                  className="image-analysis-page__analyze-btn"
                 >
-                  <option value="representative">
-                    Репрезентативные (художественный)
-                  </option>
-                  <option value="dominant">
-                    Доминирующие (по площади)
-                  </option>
-                </select>
+                  {isProcessing ? 'Обработка...' : 'Анализировать'}
+                </Button>
               </div>
 
-              <div className="image-analysis-page__control-group">
-                <label
-                  htmlFor="similarity-threshold"
-                  className="image-analysis-page__label"
-                  title="Порог схожести (Delta E): чем меньше значение, тем более похожие цвета группируются вместе. Меньшие значения дают больше цветов, большие - меньше."
-                >
-                  Порог схожести: {similarityThreshold}
-                </label>
-                <input
-                  type="range"
-                  id="similarity-threshold"
-                  min="5"
-                  max="50"
-                  value={similarityThreshold}
-                  onChange={(e) => setSimilarityThreshold(Number(e.target.value))}
-                  className="image-analysis-page__slider"
-                  disabled={isProcessing}
-                />
-                <div className="image-analysis-page__slider-hint">
-                  Меньше значение = больше цветов (более строгая группировка)
+              {error && (
+                <div className="image-analysis-page__error" role="alert">
+                  {error}
                 </div>
-              </div>
+              )}
 
-              <div className="image-analysis-page__control-group">
-                <label
-                  htmlFor="achromatic-threshold"
-                  className="image-analysis-page__label"
-                  title="Порог 'серого': цвета с насыщенностью ниже этого значения считаются серыми (ахроматическими) и сортируются отдельно от цветных."
-                >
-                  Порог "серого": {achromaticThreshold}
-                </label>
-                <input
-                  type="range"
-                  id="achromatic-threshold"
-                  min="0"
-                  max="50"
-                  value={achromaticThreshold}
-                  onChange={(e) => setAchromaticThreshold(Number(e.target.value))}
-                  className="image-analysis-page__slider"
-                  disabled={isProcessing}
-                />
-                <div className="image-analysis-page__slider-hint">
-                  Меньше значение = больше цветов считаются серыми
+              {isProcessing && (
+                <div className="image-analysis-page__loading">
+                  <LoadingSpinner
+                    text="Анализ изображения, это может занять несколько секунд..."
+                    size="large"
+                  />
                 </div>
-              </div>
+              )}
 
-              <Button
-                onClick={handleAnalyze}
-                disabled={isProcessing}
-                className="image-analysis-page__analyze-btn"
-              >
-                {isProcessing ? 'Обработка...' : 'Анализировать'}
-              </Button>
-            </div>
-
-            {error && (
-              <div className="image-analysis-page__error" role="alert">
-                {error}
-              </div>
-            )}
-
-            {isProcessing && (
-              <div className="image-analysis-page__loading">
-                <LoadingSpinner
-                  text="Анализ изображения, это может занять несколько секунд..."
-                  size="large"
-                />
-              </div>
-            )}
-
-            {hasAnalyzed && !isProcessing && results.length === 0 && !error && (
-              <div className="image-analysis-page__empty">
-                После исключения белого и черного подходящих цветов не найдено
-              </div>
-            )}
-
-            {results.length > 0 && (
-              <div className="image-analysis-page__results" ref={resultsRef}>
-                <div className="image-analysis-page__results-header">
-                  <h2 className="image-analysis-page__results-title">
-                    Результаты анализа ({results.length} цветов)
-                  </h2>
-                  {results.length < originalResults.length && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={handleRestoreAll}
-                      title="Восстановить все удаленные цвета"
-                    >
-                      ↶ Восстановить все
-                    </Button>
-                  )}
+              {hasAnalyzed && !isProcessing && results.length === 0 && !error && (
+                <div className="image-analysis-page__empty">
+                  После исключения белого и черного подходящих цветов не найдено
                 </div>
-                <div className="image-analysis-page__results-grid">
-                  {results.map((hex, index) => {
-                    const isExpanded = expandedColorHexes.has(hex)
-                    let colorInfo = null
-                    try {
-                      const color = createColorFromHex(hex)
-                      colorInfo = color
-                    } catch (e) {
-                      console.error('Failed to parse color:', hex, e)
-                    }
+              )}
 
-                    return (
-                      <div
-                        key={`${hex}-${index}`}
-                        className="image-analysis-page__result-card"
-                        onMouseEnter={() => handleColorHover(hex)}
-                        onMouseLeave={handleColorLeave}
-                        onClick={() => handleColorClick(hex)}
+              {results.length > 0 && (
+                <div className="image-analysis-page__results" ref={resultsRef}>
+                  <div className="image-analysis-page__results-header">
+                    <h2 className="image-analysis-page__results-title">
+                      Результаты анализа ({results.length} цветов)
+                    </h2>
+                    {results.length < originalResults.length && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleRestoreAll}
+                        title="Восстановить все удаленные цвета"
                       >
-                        <div className="image-analysis-page__color-preview-wrapper">
-                          <div
-                            className="image-analysis-page__color-preview"
-                            style={{ backgroundColor: hex, cursor: 'pointer' }}
-                            title={`${hex} - Кликните для детальной информации`}
-                          />
-                          <button
-                            className="image-analysis-page__remove-color-btn"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              handleRemoveColor(hex)
-                            }}
-                            title="Удалить цвет из результатов"
-                            aria-label="Удалить цвет"
-                          >
-                            ×
-                          </button>
-                        </div>
-                        <div className="image-analysis-page__result-content">
-                          <div className="image-analysis-page__ink-hex">
-                            {hex}
+                        ↶ Восстановить все
+                      </Button>
+                    )}
+                  </div>
+                  <div className="image-analysis-page__results-grid">
+                    {results.map((hex, index) => {
+                      const isExpanded = expandedColorHexes.has(hex)
+                      let colorInfo = null
+                      try {
+                        const color = createColorFromHex(hex)
+                        colorInfo = color
+                      } catch (e) {
+                        console.error('Failed to parse color:', hex, e)
+                      }
+
+                      return (
+                        <div
+                          key={`${hex}-${index}`}
+                          className="image-analysis-page__result-card"
+                          onMouseEnter={() => handleColorHover(hex)}
+                          onMouseLeave={handleColorLeave}
+                          onClick={() => handleColorClick(hex)}
+                        >
+                          <div className="image-analysis-page__color-preview-wrapper">
+                            <div
+                              className="image-analysis-page__color-preview"
+                              style={{ backgroundColor: hex, cursor: 'pointer' }}
+                              title={`${hex} - Кликните для детальной информации`}
+                            />
+                            <button
+                              className="image-analysis-page__remove-color-btn"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleRemoveColor(hex)
+                              }}
+                              title="Удалить цвет из результатов"
+                              aria-label="Удалить цвет"
+                            >
+                              ×
+                            </button>
                           </div>
-                          {isExpanded && colorInfo && (
-                            <div className="image-analysis-page__color-details">
-                              <div className="image-analysis-page__color-detail-item">
-                                <span className="image-analysis-page__color-detail-label">RGB:</span>
-                                <code className="image-analysis-page__color-detail-value">
-                                  rgb({colorInfo.rgb.r}, {colorInfo.rgb.g}, {colorInfo.rgb.b})
-                                </code>
-                              </div>
-                              <div className="image-analysis-page__color-detail-item">
-                                <span className="image-analysis-page__color-detail-label">HSL:</span>
-                                <code className="image-analysis-page__color-detail-value">
-                                  hsl({colorInfo.hsl.h}, {colorInfo.hsl.s}%, {colorInfo.hsl.l}%)
-                                </code>
-                              </div>
-                              {(() => {
-                                const cmyk = rgbToCmyk(colorInfo.rgb)
-                                return (
-                                  <div className="image-analysis-page__color-detail-item">
-                                    <span className="image-analysis-page__color-detail-label">CMYK:</span>
-                                    <code className="image-analysis-page__color-detail-value">
-                                      cmyk({cmyk.c.toFixed(1)}%, {cmyk.m.toFixed(1)}%, {cmyk.y.toFixed(1)}%, {cmyk.k.toFixed(1)}%)
-                                    </code>
-                                  </div>
-                                )
-                              })()}
-                              <div className="image-analysis-page__color-detail-item">
-                                <span className="image-analysis-page__color-detail-label">Название:</span>
-                                <span className="image-analysis-page__color-detail-value">
-                                  {getColorNameFromHue(colorInfo.hsl.h)}
-                                </span>
-                              </div>
+                          <div className="image-analysis-page__result-content">
+                            <div className="image-analysis-page__ink-hex">
+                              {hex}
                             </div>
-                          )}
-                          <div className="image-analysis-page__result-actions" style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={(e) => handleToggleColorInfo(hex, e)}
-                              title={isExpanded ? "Скрыть информацию о цвете" : "Показать информацию о цвете"}
-                            >
-                              {isExpanded ? '🔽 Скрыть инфо' : 'ℹ️ Инфо о цвете'}
-                            </Button>
-                            <Button
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleAddToPalette(hex)
-                              }}
-                              title="Добавить этот цвет в палитру"
-                            >
-                              ➕ В палитру
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleCopyHex(hex)
-                              }}
-                              title="Скопировать HEX"
-                            >
-                              📋 Копировать HEX
-                            </Button>
+                            {isExpanded && colorInfo && (
+                              <div className="image-analysis-page__color-details">
+                                <div className="image-analysis-page__color-detail-item">
+                                  <span className="image-analysis-page__color-detail-label">RGB:</span>
+                                  <code className="image-analysis-page__color-detail-value">
+                                    rgb({colorInfo.rgb.r}, {colorInfo.rgb.g}, {colorInfo.rgb.b})
+                                  </code>
+                                </div>
+                                <div className="image-analysis-page__color-detail-item">
+                                  <span className="image-analysis-page__color-detail-label">HSL:</span>
+                                  <code className="image-analysis-page__color-detail-value">
+                                    hsl({colorInfo.hsl.h}, {colorInfo.hsl.s}%, {colorInfo.hsl.l}%)
+                                  </code>
+                                </div>
+                                {(() => {
+                                  const cmyk = rgbToCmyk(colorInfo.rgb)
+                                  return (
+                                    <div className="image-analysis-page__color-detail-item">
+                                      <span className="image-analysis-page__color-detail-label">CMYK:</span>
+                                      <code className="image-analysis-page__color-detail-value">
+                                        cmyk({cmyk.c.toFixed(1)}%, {cmyk.m.toFixed(1)}%, {cmyk.y.toFixed(1)}%, {cmyk.k.toFixed(1)}%)
+                                      </code>
+                                    </div>
+                                  )
+                                })()}
+                                <div className="image-analysis-page__color-detail-item">
+                                  <span className="image-analysis-page__color-detail-label">Название:</span>
+                                  <span className="image-analysis-page__color-detail-value">
+                                    {getColorNameFromHue(colorInfo.hsl.h)}
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+                            <div className="image-analysis-page__result-actions" style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={(e) => handleToggleColorInfo(hex, e)}
+                                title={isExpanded ? "Скрыть информацию о цвете" : "Показать информацию о цвете"}
+                              >
+                                {isExpanded ? '🔽 Скрыть инфо' : 'ℹ️ Инфо о цвете'}
+                              </Button>
+                              <Button
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleAddToPalette(hex)
+                                }}
+                                title="Добавить этот цвет в палитру"
+                              >
+                                ➕ В палитру
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleCopyHex(hex)
+                                }}
+                                title="Скопировать HEX"
+                              >
+                                📋 Копировать HEX
+                              </Button>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    )
-                  })}
+                      )
+                    })}
+                  </div>
                 </div>
-              </div>
-            )}
-          </>
+              )}
+            </div>
+          </div>
         )}
 
         {selectedColorHex && (
