@@ -83,10 +83,6 @@
   .button {
     min-height: 44px; /* Минимальный размер для touch-интерфейсов */
   }
-
-  .button--sm {
-    min-height: 40px;
-  }
 }
 
 .button--full-width {

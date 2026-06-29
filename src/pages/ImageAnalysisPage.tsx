@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import ImageUploader from '@/components/ImageUploader/ImageUploader'
 import Button from '@/components/Button/Button'
 import LoadingSpinner from '@/components/LoadingSpinner/LoadingSpinner'
@@ -7,6 +8,7 @@ import ColorDetailsModal from '@/components/ColorDetailsModal/ColorDetailsModal'
 import ImageHighlighter from '@/components/ImageHighlighter/ImageHighlighter'
 import { processImageFile, createImagePreview, createColorPixelMapping } from '@/utils/imageProcessor'
 import { usePaletteContext } from '@/contexts/PaletteContext'
+import { useColorContext } from '@/contexts/ColorContext'
 import { createColorFromHex, getColorNameFromHue } from '@/utils/colorOperations'
 import { rgbToCmyk } from '@/utils/colorConversions'
 import type { SelectionMethod } from '@/types'
@@ -30,9 +32,12 @@ function ImageAnalysisPage() {
   const [isColorDetailsModalOpen, setIsColorDetailsModalOpen] = useState(false)
   const [originalResults, setOriginalResults] = useState<string[]>([])
   const [highlightedPixels, setHighlightedPixels] = useState<Array<{ x: number; y: number }>>([])
+  const [highlightedHex, setHighlightedHex] = useState<string | null>(null)
   const [expandedColorHexes, setExpandedColorHexes] = useState<Set<string>>(new Set())
   const imageCanvasRef = useRef<HTMLCanvasElement | null>(null)
   const { addColor } = usePaletteContext()
+  const { setTargetColorFromHex } = useColorContext()
+  const navigate = useNavigate()
   const workerRef = useRef<Worker | null>(null)
 
   // Инициализация и очистка Web Worker
@@ -141,6 +146,16 @@ function ImageAnalysisPage() {
     }
   }
 
+  const handleFindRecipe = (hex: string) => {
+    try {
+      setTargetColorFromHex(hex)
+      navigate('/recipe')
+    } catch (e) {
+      console.error('Не удалось установить целевой цвет', e)
+      setError('Не удалось установить целевой цвет')
+    }
+  }
+
   const handleCopyHex = async (hex: string) => {
     try {
       await navigator.clipboard.writeText(hex)
@@ -186,15 +201,28 @@ function ImageAnalysisPage() {
       try {
         const pixels = createColorPixelMapping(imageCanvasRef.current, hex, 40)
         setHighlightedPixels(pixels)
+        setHighlightedHex(hex)
       } catch (error) {
         console.error('Failed to create pixel mapping:', error)
         setHighlightedPixels([])
+        setHighlightedHex(null)
       }
     }
   }
 
   const handleColorLeave = () => {
     setHighlightedPixels([])
+    setHighlightedHex(null)
+  }
+
+  // Тач-эквивалент hover: на телефоне нет "наведения", поэтому тап по свотчу
+  // переключает подсветку на фото (тап ещё раз — снимает подсветку)
+  const handleColorTap = (hex: string) => {
+    if (highlightedHex === hex) {
+      handleColorLeave()
+    } else {
+      handleColorHover(hex)
+    }
   }
 
   return (
@@ -222,6 +250,8 @@ function ImageAnalysisPage() {
                     highlightedPixels={highlightedPixels}
                     highlightColor="rgba(255, 255, 0, 0.6)"
                     opacity={0.6}
+                    sourceWidth={imageCanvasRef.current?.width}
+                    sourceHeight={imageCanvasRef.current?.height}
                   />
                 )}
                 <Button
@@ -233,6 +263,41 @@ function ImageAnalysisPage() {
                   ✕ Удалить
                 </Button>
               </div>
+
+              {highlightedHex && (
+                <div className="image-analysis-page__selected-color">
+                  <span
+                    className="image-analysis-page__selected-color-swatch"
+                    style={{ backgroundColor: highlightedHex }}
+                    aria-hidden="true"
+                  />
+                  <code className="image-analysis-page__selected-color-hex">{highlightedHex}</code>
+                  <button
+                    className="image-analysis-page__selected-color-action"
+                    onClick={() => handleCopyHex(highlightedHex)}
+                    title="Скопировать HEX"
+                    aria-label="Скопировать HEX"
+                  >
+                    📋
+                  </button>
+                  <button
+                    className="image-analysis-page__selected-color-action"
+                    onClick={() => handleAddToPalette(highlightedHex)}
+                    title="Добавить в палитру"
+                    aria-label="Добавить в палитру"
+                  >
+                    ➕
+                  </button>
+                  <button
+                    className="image-analysis-page__selected-color-action"
+                    onClick={() => handleFindRecipe(highlightedHex)}
+                    title="Подобрать рецепт смешивания"
+                    aria-label="Подобрать рецепт смешивания"
+                  >
+                    🧪
+                  </button>
+                </div>
+              )}
             </div>
 
             <div className="image-analysis-page__content-section">
@@ -290,74 +355,81 @@ function ImageAnalysisPage() {
                   </div>
                 </div>
 
-                <div className="image-analysis-page__control-group">
-                  <label
-                    htmlFor="selection-method"
-                    className="image-analysis-page__label"
-                  >
-                    Метод анализа:
-                  </label>
-                  <select
-                    id="selection-method"
-                    value={selectionMethod}
-                    onChange={(e) => setSelectionMethod(e.target.value as SelectionMethod)}
-                    className="image-analysis-page__select"
-                    disabled={isProcessing}
-                  >
-                    <option value="representative">
-                      Репрезентативные (художественный)
-                    </option>
-                    <option value="dominant">
-                      Доминирующие (по площади)
-                    </option>
-                  </select>
-                </div>
+                <details className="image-analysis-page__advanced">
+                  <summary className="image-analysis-page__advanced-summary">
+                    ⚙️ Дополнительные настройки
+                  </summary>
+                  <div className="image-analysis-page__advanced-content">
+                    <div className="image-analysis-page__control-group">
+                      <label
+                        htmlFor="selection-method"
+                        className="image-analysis-page__label"
+                      >
+                        Метод анализа:
+                      </label>
+                      <select
+                        id="selection-method"
+                        value={selectionMethod}
+                        onChange={(e) => setSelectionMethod(e.target.value as SelectionMethod)}
+                        className="image-analysis-page__select"
+                        disabled={isProcessing}
+                      >
+                        <option value="representative">
+                          Репрезентативные (художественный)
+                        </option>
+                        <option value="dominant">
+                          Доминирующие (по площади)
+                        </option>
+                      </select>
+                    </div>
 
-                <div className="image-analysis-page__control-group">
-                  <label
-                    htmlFor="similarity-threshold"
-                    className="image-analysis-page__label"
-                    title="Порог схожести (Delta E): чем меньше значение, тем более похожие цвета группируются вместе. Меньшие значения дают больше цветов, большие - меньше."
-                  >
-                    Порог схожести: {similarityThreshold}
-                  </label>
-                  <input
-                    type="range"
-                    id="similarity-threshold"
-                    min="5"
-                    max="50"
-                    value={similarityThreshold}
-                    onChange={(e) => setSimilarityThreshold(Number(e.target.value))}
-                    className="image-analysis-page__slider"
-                    disabled={isProcessing}
-                  />
-                  <div className="image-analysis-page__slider-hint">
-                    Меньше значение = больше цветов (более строгая группировка)
-                  </div>
-                </div>
+                    <div className="image-analysis-page__control-group">
+                      <label
+                        htmlFor="similarity-threshold"
+                        className="image-analysis-page__label"
+                        title="Порог схожести (Delta E): чем меньше значение, тем более похожие цвета группируются вместе. Меньшие значения дают больше цветов, большие - меньше."
+                      >
+                        Порог схожести: {similarityThreshold}
+                      </label>
+                      <input
+                        type="range"
+                        id="similarity-threshold"
+                        min="5"
+                        max="50"
+                        value={similarityThreshold}
+                        onChange={(e) => setSimilarityThreshold(Number(e.target.value))}
+                        className="image-analysis-page__slider"
+                        disabled={isProcessing}
+                      />
+                      <div className="image-analysis-page__slider-hint">
+                        Меньше значение = больше цветов (более строгая группировка)
+                      </div>
+                    </div>
 
-                <div className="image-analysis-page__control-group">
-                  <label
-                    htmlFor="achromatic-threshold"
-                    className="image-analysis-page__label"
-                    title="Порог 'серого': цвета с насыщенностью ниже этого значения считаются серыми (ахроматическими) и сортируются отдельно от цветных."
-                  >
-                    Порог "серого": {achromaticThreshold}
-                  </label>
-                  <input
-                    type="range"
-                    id="achromatic-threshold"
-                    min="0"
-                    max="50"
-                    value={achromaticThreshold}
-                    onChange={(e) => setAchromaticThreshold(Number(e.target.value))}
-                    className="image-analysis-page__slider"
-                    disabled={isProcessing}
-                  />
-                  <div className="image-analysis-page__slider-hint">
-                    Меньше значение = больше цветов считаются серыми
+                    <div className="image-analysis-page__control-group">
+                      <label
+                        htmlFor="achromatic-threshold"
+                        className="image-analysis-page__label"
+                        title="Порог 'серого': цвета с насыщенностью ниже этого значения считаются серыми (ахроматическими) и сортируются отдельно от цветных."
+                      >
+                        Порог "серого": {achromaticThreshold}
+                      </label>
+                      <input
+                        type="range"
+                        id="achromatic-threshold"
+                        min="0"
+                        max="50"
+                        value={achromaticThreshold}
+                        onChange={(e) => setAchromaticThreshold(Number(e.target.value))}
+                        className="image-analysis-page__slider"
+                        disabled={isProcessing}
+                      />
+                      <div className="image-analysis-page__slider-hint">
+                        Меньше значение = больше цветов считаются серыми
+                      </div>
+                    </div>
                   </div>
-                </div>
+                </details>
 
                 <Button
                   onClick={handleAnalyze}
@@ -420,7 +492,9 @@ function ImageAnalysisPage() {
                       return (
                         <div
                           key={`${hex}-${index}`}
-                          className="image-analysis-page__result-card"
+                          className={`image-analysis-page__result-card ${
+                            highlightedHex === hex ? 'image-analysis-page__result-card--selected' : ''
+                          }`}
                           onMouseEnter={() => handleColorHover(hex)}
                           onMouseLeave={handleColorLeave}
                           onClick={() => handleColorClick(hex)}
@@ -429,7 +503,11 @@ function ImageAnalysisPage() {
                             <div
                               className="image-analysis-page__color-preview"
                               style={{ backgroundColor: hex, cursor: 'pointer' }}
-                              title={`${hex} - Кликните для детальной информации`}
+                              title={`${hex} - нажмите, чтобы показать на фото`}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleColorTap(hex)
+                              }}
                             />
                             <button
                               className="image-analysis-page__remove-color-btn"
@@ -480,24 +558,40 @@ function ImageAnalysisPage() {
                                 </div>
                               </div>
                             )}
-                            <div className="image-analysis-page__result-actions" style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+                            <div className="image-analysis-page__result-actions">
                               <Button
                                 size="sm"
-                                variant="outline"
-                                onClick={(e) => handleToggleColorInfo(hex, e)}
-                                title={isExpanded ? "Скрыть информацию о цвете" : "Показать информацию о цвете"}
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleFindRecipe(hex)
+                                }}
+                                title="Подобрать рецепт смешивания для этого цвета"
                               >
-                                {isExpanded ? '🔽 Скрыть инфо' : 'ℹ️ Инфо о цвете'}
+                                <span aria-hidden="true">🧪</span>
+                                <span className="image-analysis-page__action-label">Подобрать рецепт</span>
                               </Button>
                               <Button
                                 size="sm"
+                                variant="outline"
                                 onClick={(e) => {
                                   e.stopPropagation()
                                   handleAddToPalette(hex)
                                 }}
                                 title="Добавить этот цвет в палитру"
                               >
-                                ➕ В палитру
+                                <span aria-hidden="true">➕</span>
+                                <span className="image-analysis-page__action-label">В палитру</span>
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={(e) => handleToggleColorInfo(hex, e)}
+                                title={isExpanded ? "Скрыть информацию о цвете" : "Показать информацию о цвете"}
+                              >
+                                <span aria-hidden="true">{isExpanded ? '🔽' : 'ℹ️'}</span>
+                                <span className="image-analysis-page__action-label">
+                                  {isExpanded ? 'Скрыть инфо' : 'Инфо о цвете'}
+                                </span>
                               </Button>
                               <Button
                                 size="sm"
@@ -508,7 +602,8 @@ function ImageAnalysisPage() {
                                 }}
                                 title="Скопировать HEX"
                               >
-                                📋 Копировать HEX
+                                <span aria-hidden="true">📋</span>
+                                <span className="image-analysis-page__action-label">Копировать HEX</span>
                               </Button>
                             </div>
                           </div>
@@ -528,6 +623,7 @@ function ImageAnalysisPage() {
             colorHex={selectedColorHex}
             onClose={handleCloseColorDetails}
             onAddToPalette={handleAddToPalette}
+            onFindRecipe={handleFindRecipe}
           />
         )}
       </div>

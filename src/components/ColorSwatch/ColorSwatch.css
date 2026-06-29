@@ -29,6 +29,17 @@
   transform: scale(1.05);
 }
 
+@media (hover: none) {
+  /* Тач-эквивалент hover: видимый отклик на сам тап */
+  .color-swatch:active {
+    border-color: var(--color-primary);
+  }
+
+  .color-swatch__preview:active {
+    transform: scale(0.96);
+  }
+}
+
 .color-swatch__tooltip {
   position: absolute;
   bottom: 100%;
@@ -103,8 +114,8 @@
 }
 
 .color-swatch--small .color-swatch__preview {
-  min-width: 40px;
-  min-height: 40px;
+  min-width: 44px;
+  min-height: 44px;
 }
 
 .color-swatch--small .color-swatch__name {

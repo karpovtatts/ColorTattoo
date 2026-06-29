@@ -67,8 +67,8 @@
   color: var(--color-text-secondary);
   cursor: pointer;
   padding: 0;
-  width: 2rem;
-  height: 2rem;
+  width: 2.75rem;
+  height: 2.75rem;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -216,6 +216,12 @@
 .color-details-modal__harmony-color-item:hover {
   background: var(--color-surface-hover);
   transform: translateY(-2px);
+}
+
+@media (hover: none) {
+  .color-details-modal__harmony-color-item:active {
+    background: var(--color-surface-hover);
+  }
 }
 
 .color-details-modal__harmony-color-preview {

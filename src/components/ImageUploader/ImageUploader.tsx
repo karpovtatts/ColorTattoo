@@ -85,6 +85,7 @@ function ImageUploader({
     <div className="image-uploader">
       <div
         className={`image-uploader__dropzone ${isDragging ? 'image-uploader__dropzone--dragging' : ''}`}
+        onClick={handleButtonClick}
         onDragEnter={handleDragEnter}
         onDragLeave={handleDragLeave}
         onDragOver={handleDragOver}
@@ -105,7 +106,6 @@ function ImageUploader({
             <button
               type="button"
               className="image-uploader__link"
-              onClick={handleButtonClick}
             >
               выберите файл
             </button>

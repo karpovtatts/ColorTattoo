@@ -6,6 +6,13 @@ interface ImageHighlighterProps {
   highlightedPixels?: Array<{ x: number; y: number }>
   highlightColor?: string
   opacity?: number
+  // Размеры пиксельного пространства, в котором заданы highlightedPixels
+  // (это размер уменьшенного canvas, использованного для анализа цвета,
+  // а не натуральное/отрендеренное разрешение imageSrc). Без них координаты
+  // подсветки масштабируются относительно полноразмерного изображения и
+  // оказываются смещены.
+  sourceWidth?: number
+  sourceHeight?: number
 }
 
 function ImageHighlighter({
@@ -13,6 +20,8 @@ function ImageHighlighter({
   highlightedPixels = [],
   highlightColor = 'rgba(255, 255, 0, 0.5)',
   opacity = 0.6,
+  sourceWidth,
+  sourceHeight,
 }: ImageHighlighterProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const overlayRef = useRef<HTMLCanvasElement>(null)
@@ -51,14 +60,19 @@ function ImageHighlighter({
     const containerWidth = containerRect.width
     const containerHeight = containerRect.height
 
+    // highlightedPixels заданы в пространстве уменьшенного canvas анализа,
+    // а не в натуральном разрешении imageSrc — масштабируем относительно него
+    const pixelSpaceWidth = sourceWidth ?? imageSize.width
+    const pixelSpaceHeight = sourceHeight ?? imageSize.height
+
     // Вычисляем масштаб
-    const scaleX = containerWidth / imageSize.width
-    const scaleY = containerHeight / imageSize.height
+    const scaleX = containerWidth / pixelSpaceWidth
+    const scaleY = containerHeight / pixelSpaceHeight
     const scale = Math.min(scaleX, scaleY)
 
     // Вычисляем реальные размеры изображения на экране
-    const displayWidth = imageSize.width * scale
-    const displayHeight = imageSize.height * scale
+    const displayWidth = pixelSpaceWidth * scale
+    const displayHeight = pixelSpaceHeight * scale
 
     // Устанавливаем размеры canvas
     canvas.width = containerWidth
@@ -83,7 +97,7 @@ function ImageHighlighter({
       ctx.fillRect(screenX, screenY, pixelSize, pixelSize)
       ctx.strokeRect(screenX, screenY, pixelSize, pixelSize)
     })
-  }, [imageLoaded, imageSize, highlightedPixels, highlightColor, opacity])
+  }, [imageLoaded, imageSize, highlightedPixels, highlightColor, opacity, sourceWidth, sourceHeight])
 
   return (
     <div ref={containerRef} className="image-highlighter">

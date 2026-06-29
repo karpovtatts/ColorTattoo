@@ -15,6 +15,8 @@
 @media (max-width: 768px) {
   .layout__main {
     padding: var(--spacing-md);
+    /* Место под фиксированную нижнюю навигацию (56px) + safe-area на iPhone */
+    padding-bottom: calc(56px + var(--spacing-md) + env(safe-area-inset-bottom, 0));
   }
 }
 

@@ -28,7 +28,7 @@
 .loading-spinner__circle {
   border-radius: 50%;
   background-color: var(--color-primary);
-  animation: loading-spinner-bounce 1.4s ease-in-out infinite both;
+  animation: loading-spinner-pulse 1.4s ease-in-out infinite both;
 }
 
 .loading-spinner--small .loading-spinner__circle {
@@ -65,7 +65,7 @@
   text-align: center;
 }
 
-@keyframes loading-spinner-bounce {
+@keyframes loading-spinner-pulse {
   0%,
   80%,
   100% {

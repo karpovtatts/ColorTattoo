@@ -1,4 +1,4 @@
-import type { RGB, HSL, LAB, Color, RecipeIngredient } from '../types'
+import type { RGB, HSL, LAB, Color } from '../types'
 import {
   rgbToHsl,
   hslToRgb,
@@ -7,67 +7,6 @@ import {
   rgbToHex,
   rgbToLab,
 } from './colorConversions'
-
-/**
- * Смешивание цветов по пропорциям (взвешенное среднее RGB)
- * @param ingredients - Массив ингредиентов с цветами и пропорциями
- * @param getColorById - Функция для получения цвета по ID
- * @returns Результирующий RGB цвет
- */
-export function mixColors(
-  ingredients: RecipeIngredient[],
-  getColorById: (id: string) => Color | undefined
-): RGB {
-  if (ingredients.length === 0) {
-    throw new Error('Cannot mix colors: no ingredients provided')
-  }
-
-  let totalR = 0
-  let totalG = 0
-  let totalB = 0
-  let totalWeight = 0
-
-  for (const ingredient of ingredients) {
-    const color = getColorById(ingredient.colorId)
-    if (!color) {
-      throw new Error(`Color not found: ${ingredient.colorId}`)
-    }
-
-    const weight = Math.max(0, ingredient.proportion) // Пропорция не может быть отрицательной
-    totalR += color.rgb.r * weight
-    totalG += color.rgb.g * weight
-    totalB += color.rgb.b * weight
-    totalWeight += weight
-  }
-
-  if (totalWeight === 0) {
-    throw new Error('Cannot mix colors: total weight is zero')
-  }
-
-  return normalizeRgb({
-    r: totalR / totalWeight,
-    g: totalG / totalWeight,
-    b: totalB / totalWeight,
-  })
-}
-
-/**
- * Расчет яркости цвета (luminance) по формуле относительной яркости
- * @param rgb - RGB значения
- * @returns Яркость от 0 до 1
- */
-export function calculateLuminance(rgb: RGB): number {
-  const normalize = (value: number) => {
-    const v = value / 255
-    return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)
-  }
-
-  const r = normalize(rgb.r)
-  const g = normalize(rgb.g)
-  const b = normalize(rgb.b)
-
-  return 0.299 * r + 0.587 * g + 0.114 * b
-}
 
 /**
  * Расчет насыщенности цвета (saturation) из HSL
@@ -99,47 +38,6 @@ export function calculateColorDistance(color1: RGB, color2: RGB): number {
   const db = color1.b - color2.b
 
   return Math.sqrt(dr * dr + dg * dg + db * db)
-}
-
-/**
- * Расчет расстояния между двумя Color объектами
- * @param color1 - Первый цвет
- * @param color2 - Второй цвет
- * @returns Расстояние
- */
-export function calculateColorDistanceFull(
-  color1: Color,
-  color2: Color
-): number {
-  return calculateColorDistance(color1.rgb, color2.rgb)
-}
-
-/**
- * Поиск ближайшего цвета из палитры к целевому цвету
- * @param targetColor - Целевой цвет
- * @param palette - Палитра цветов
- * @returns Ближайший цвет и расстояние до него
- */
-export function findNearestColor(
-  targetColor: Color,
-  palette: Color[]
-): { color: Color; distance: number } {
-  if (palette.length === 0) {
-    throw new Error('Cannot find nearest color: palette is empty')
-  }
-
-  let nearest = palette[0]
-  let minDistance = calculateColorDistanceFull(targetColor, nearest)
-
-  for (let i = 1; i < palette.length; i++) {
-    const distance = calculateColorDistanceFull(targetColor, palette[i])
-    if (distance < minDistance) {
-      minDistance = distance
-      nearest = palette[i]
-    }
-  }
-
-  return { color: nearest, distance: minDistance }
 }
 
 /**

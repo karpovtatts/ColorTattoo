@@ -53,11 +53,58 @@
   backdrop-filter: blur(4px);
 }
 
+/* Полоска с инфо о выбранном (тапнутом) цвете — едет вместе с sticky-фото,
+   чтобы не скроллить вниз к карточке результата каждый раз */
+.image-analysis-page__selected-color {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-sm);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background-color: var(--color-bg-secondary);
+  border-radius: var(--radius-md);
+}
+
+.image-analysis-page__selected-color-swatch {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.image-analysis-page__selected-color-hex {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  font-family: 'Courier New', monospace;
+  color: var(--color-text-primary);
+  flex: 1;
+}
+
+.image-analysis-page__selected-color-action {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: var(--color-bg-tertiary);
+  border-radius: var(--radius-sm);
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.image-analysis-page__selected-color-action:hover {
+  background: var(--color-border-hover);
+}
+
 .image-analysis-page__controls {
   display: flex;
   gap: var(--spacing-md);
   align-items: flex-end;
-  margin-bottom: var(--spacing-xl);
+  margin-bottom: var(--spacing-lg);
   flex-wrap: wrap;
 }
 
@@ -67,6 +114,42 @@
   gap: var(--spacing-xs);
   flex: 1;
   min-width: 200px;
+}
+
+/* Сворачиваемые тонкие настройки — по умолчанию скрыты, чтобы не отодвигать
+   кнопку "Анализировать" и результаты вниз на телефоне */
+.image-analysis-page__advanced {
+  flex-basis: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background-color: var(--color-bg-secondary);
+}
+
+.image-analysis-page__advanced-summary {
+  padding: var(--spacing-sm) var(--spacing-md);
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  list-style: none;
+}
+
+.image-analysis-page__advanced-summary::-webkit-details-marker {
+  display: none;
+}
+
+.image-analysis-page__advanced[open] .image-analysis-page__advanced-summary {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.image-analysis-page__advanced-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
 }
 
 .image-analysis-page__label {
@@ -101,8 +184,8 @@
 
 .image-analysis-page__slider {
   width: 100%;
-  height: 6px;
-  border-radius: 3px;
+  height: 8px;
+  border-radius: 4px;
   background: var(--color-bg-secondary);
   outline: none;
   -webkit-appearance: none;
@@ -113,32 +196,34 @@
 .image-analysis-page__slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 18px;
-  height: 18px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   background: var(--color-primary);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: transform 0.2s, box-shadow 0.2s;
 }
 
-.image-analysis-page__slider::-webkit-slider-thumb:hover {
+.image-analysis-page__slider::-webkit-slider-thumb:hover,
+.image-analysis-page__slider::-webkit-slider-thumb:active {
   transform: scale(1.1);
-  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+  box-shadow: 0 0 0 6px rgba(37, 99, 235, 0.15);
 }
 
 .image-analysis-page__slider::-moz-range-thumb {
-  width: 18px;
-  height: 18px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   background: var(--color-primary);
   cursor: pointer;
   border: none;
-  transition: all 0.2s;
+  transition: transform 0.2s, box-shadow 0.2s;
 }
 
-.image-analysis-page__slider::-moz-range-thumb:hover {
+.image-analysis-page__slider::-moz-range-thumb:hover,
+.image-analysis-page__slider::-moz-range-thumb:active {
   transform: scale(1.1);
-  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+  box-shadow: 0 0 0 6px rgba(37, 99, 235, 0.15);
 }
 
 .image-analysis-page__slider:disabled {
@@ -206,7 +291,7 @@
 }
 
 .image-analysis-page__results {
-  margin-top: var(--spacing-xl);
+  margin-top: 0;
 }
 
 .image-analysis-page__results-header {
@@ -246,6 +331,14 @@
   transform: translateY(-2px);
 }
 
+@media (hover: none) {
+  /* На тач-устройствах нет hover — даём тактильный фидбек на сам тап */
+  .image-analysis-page__result-card:active {
+    background-color: var(--color-bg-tertiary);
+    transform: scale(0.98);
+  }
+}
+
 .image-analysis-page__result-card--selected {
   border-color: var(--color-primary);
   box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
@@ -258,10 +351,10 @@
 
 .image-analysis-page__remove-color-btn {
   position: absolute;
-  top: var(--spacing-xs);
-  right: var(--spacing-xs);
-  width: 24px;
-  height: 24px;
+  top: 2px;
+  right: 2px;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -270,12 +363,12 @@
   backdrop-filter: blur(4px);
   border: none;
   color: white;
-  font-size: 18px;
+  font-size: 20px;
   font-weight: bold;
   line-height: 1;
   cursor: pointer;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  transition: all 0.2s;
+  transition: background-color 0.2s, transform 0.2s;
   padding: 0;
 }
 
@@ -335,6 +428,13 @@
   display: flex;
   flex-direction: column;
   gap: var(--spacing-xs);
+}
+
+.image-analysis-page__result-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-sm);
+  flex-wrap: wrap;
 }
 
 .image-analysis-page__ink-name {
@@ -409,7 +509,7 @@
   margin-top: var(--spacing-xs);
   padding: var(--spacing-sm);
   background-color: rgba(239, 68, 68, 0.1);
-  border-left: 3px solid var(--color-error);
+  border: 1px solid var(--color-error);
   border-radius: var(--radius-sm);
 }
 
@@ -432,26 +532,25 @@
   font-style: italic;
 }
 
-@media (max-width: 900px) {
-  .image-analysis-page__layout {
-    grid-template-columns: 1fr;
-    gap: var(--spacing-lg);
-  }
+/* Мобильная раскладка (по умолчанию): один столбец, картинка прилипает к верху при скролле */
+.image-analysis-page__layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--spacing-lg);
+  align-items: start;
+}
 
-  .image-analysis-page__preview-section {
-    position: sticky;
-    top: 56px; /* HEADER_HEIGHT + spacing */
-    z-index: 10;
-    margin-bottom: var(--spacing-md);
-    background-color: var(--color-bg-primary);
-    padding: var(--spacing-sm) 0;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    margin-left: calc(var(--spacing-md) * -1);
-    margin-right: calc(var(--spacing-md) * -1);
-    padding-left: var(--spacing-md);
-    padding-right: var(--spacing-md);
-  }
-  
+.image-analysis-page__preview-section {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  margin-bottom: var(--spacing-md);
+  background-color: var(--color-bg-primary);
+  padding: var(--spacing-sm) 0;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+@media (max-width: 900px) {
   .image-analysis-page__title {
     font-size: 2rem;
   }
@@ -476,32 +575,46 @@
   .image-analysis-page__results-grid {
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   }
+
+  /* В узкой карточке результата текст на кнопках не помещается и каждая
+     кнопка разворачивается на всю ширину — карточка раздувается на сотни px.
+     На мобильном оставляем только иконки в один компактный ряд. */
+  .image-analysis-page__result-actions {
+    gap: var(--spacing-xs);
+    flex-wrap: nowrap;
+  }
+
+  .image-analysis-page__result-actions button {
+    flex: 1;
+    min-width: 0;
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .image-analysis-page__action-label {
+    display: none;
+  }
 }
 
-.image-analysis-page__layout {
-  display: grid;
-  grid-template-columns: 350px 1fr;
-  gap: var(--spacing-xl);
-  align-items: start;
-}
+/* Десктоп: картинка фиксированной ширины слева, контент справа */
+@media (min-width: 901px) {
+  .image-analysis-page__layout {
+    grid-template-columns: 350px 1fr;
+    gap: var(--spacing-xl);
+  }
 
-.image-analysis-page__preview-section {
-  position: sticky;
-  top: 24px;
-  grid-column: 1;
-}
+  .image-analysis-page__preview-section {
+    top: 24px;
+    grid-column: 1;
+    margin-bottom: 0;
+    background-color: transparent;
+    padding: 0;
+    box-shadow: none;
+  }
 
-.image-analysis-page__content-section {
-  grid-column: 2;
-  min-width: 0; /* Prevent grid blowout */
-}
-
-/* Modifying existing classes to fit better */
-.image-analysis-page__controls {
-  margin-bottom: var(--spacing-lg);
-}
-
-.image-analysis-page__results {
-  margin-top: 0;
+  .image-analysis-page__content-section {
+    grid-column: 2;
+    min-width: 0; /* Prevent grid blowout */
+  }
 }
 

@@ -44,6 +44,7 @@ function ColorSwatch({
         className="color-swatch__preview"
         style={{ backgroundColor: color.hex }}
         title={color.name || color.hex}
+        onClick={() => setShowTooltip((prev) => !prev)}
       >
         {showTooltip && (
           <div className="color-swatch__tooltip">

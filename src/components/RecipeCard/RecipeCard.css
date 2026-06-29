@@ -57,7 +57,7 @@
   padding: 0.75rem;
   background: var(--color-surface-secondary);
   border-radius: var(--radius-md);
-  border-left: 3px solid var(--color-primary);
+  border: 1px solid var(--color-primary);
 }
 
 .recipe-card__notes-text {

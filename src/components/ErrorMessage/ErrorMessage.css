@@ -1,23 +1,23 @@
 .error-message {
   padding: 1rem 1.25rem;
   border-radius: var(--border-radius);
-  border-left: 4px solid;
+  border: 1px solid;
   background-color: var(--color-background-secondary);
   margin: 1rem 0;
 }
 
 .error-message--error {
-  border-left-color: var(--color-error);
+  border-color: var(--color-error);
   background-color: rgba(220, 38, 38, 0.1);
 }
 
 .error-message--warning {
-  border-left-color: var(--color-warning);
+  border-color: var(--color-warning);
   background-color: rgba(245, 158, 11, 0.1);
 }
 
 .error-message--info {
-  border-left-color: var(--color-info);
+  border-color: var(--color-info);
   background-color: rgba(59, 130, 246, 0.1);
 }
 

@@ -1,6 +1,14 @@
 import { Link, useLocation } from 'react-router-dom'
 import './Navigation.css'
 
+const NAV_ITEMS = [
+  { path: '/', label: 'Главная', icon: '🏠' },
+  { path: '/palette', label: 'Палитра', icon: '📋' },
+  { path: '/recipe', label: 'Рецепт', icon: '🧪' },
+  { path: '/saved', label: 'Сохранённые', icon: '💾' },
+  { path: '/image-analysis', label: 'Анализ фото', icon: '📷' },
+] as const
+
 function Navigation() {
   const location = useLocation()
 
@@ -9,57 +17,45 @@ function Navigation() {
   }
 
   return (
-    <nav className="navigation">
-      <div className="navigation__container">
-        <Link to="/" className="navigation__logo">
-          ColorTattoo
-        </Link>
-        <ul className="navigation__menu">
-          <li>
-            <Link
-              to="/"
-              className={`navigation__link ${isActive('/') ? 'navigation__link--active' : ''}`}
-            >
-              Главная
-            </Link>
-          </li>
-          <li>
-            <Link
-              to="/palette"
-              className={`navigation__link ${isActive('/palette') ? 'navigation__link--active' : ''}`}
-            >
-              Палитра
-            </Link>
-          </li>
-          <li>
-            <Link
-              to="/recipe"
-              className={`navigation__link ${isActive('/recipe') ? 'navigation__link--active' : ''}`}
-            >
-              Рецепт
-            </Link>
-          </li>
-          <li>
-            <Link
-              to="/saved"
-              className={`navigation__link ${isActive('/saved') ? 'navigation__link--active' : ''}`}
-            >
-              Сохранённые
-            </Link>
-          </li>
-          <li>
-            <Link
-              to="/image-analysis"
-              className={`navigation__link ${isActive('/image-analysis') ? 'navigation__link--active' : ''}`}
-            >
-              Анализ изображения
-            </Link>
-          </li>
-        </ul>
-      </div>
-    </nav>
+    <>
+      <nav className="navigation">
+        <div className="navigation__container">
+          <Link to="/" className="navigation__logo">
+            ColorTattoo
+          </Link>
+          <ul className="navigation__menu">
+            {NAV_ITEMS.map((item) => (
+              <li key={item.path}>
+                <Link
+                  to={item.path}
+                  className={`navigation__link ${isActive(item.path) ? 'navigation__link--active' : ''}`}
+                >
+                  {item.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </nav>
+
+      {/* Нижняя панель табов — основная навигация на телефоне, в зоне досягаемости большого пальца */}
+      <nav className="bottom-nav" aria-label="Основная навигация">
+        {NAV_ITEMS.map((item) => (
+          <Link
+            key={item.path}
+            to={item.path}
+            className={`bottom-nav__item ${isActive(item.path) ? 'bottom-nav__item--active' : ''}`}
+            aria-current={isActive(item.path) ? 'page' : undefined}
+          >
+            <span className="bottom-nav__icon" aria-hidden="true">
+              {item.icon}
+            </span>
+            <span className="bottom-nav__label">{item.label}</span>
+          </Link>
+        ))}
+      </nav>
+    </>
   )
 }
 
 export default Navigation
-

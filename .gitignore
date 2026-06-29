@@ -35,3 +35,6 @@ SERVER_INFO.md
 build
 *.tsbuildinfo
 
+# Local Claude Code settings (personal, not shared)
+.claude/settings.local.json
+

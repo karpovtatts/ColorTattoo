@@ -17,6 +17,7 @@ interface ColorDetailsModalProps {
   colorHex: string
   onClose: () => void
   onAddToPalette?: (hex: string) => void
+  onFindRecipe?: (hex: string) => void
 }
 
 function ColorDetailsModal({
@@ -24,6 +25,7 @@ function ColorDetailsModal({
   colorHex,
   onClose,
   onAddToPalette,
+  onFindRecipe,
 }: ColorDetailsModalProps) {
   const [color, setColor] = useState<Color | null>(null)
   const [copiedFormat, setCopiedFormat] = useState<string | null>(null)
@@ -326,9 +328,20 @@ function ColorDetailsModal({
         </div>
 
         <div className="color-details-modal__footer">
-          {onAddToPalette && (
+          {onFindRecipe && (
             <Button
               variant="primary"
+              onClick={() => {
+                onFindRecipe(color.hex)
+                onClose()
+              }}
+            >
+              🧪 Подобрать рецепт
+            </Button>
+          )}
+          {onAddToPalette && (
+            <Button
+              variant="outline"
               onClick={() => {
                 onAddToPalette(color.hex)
                 onClose()
