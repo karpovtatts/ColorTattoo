@@ -1,5 +1,5 @@
 .color-input {
-  font-family: 'Courier New', monospace;
+  font-family: var(--font-mono);
   text-transform: uppercase;
 }
 

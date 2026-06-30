@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo, useRef } from 'react'
 import type { Color } from '@/types'
 import {
   createColorFromHex,
@@ -6,9 +6,11 @@ import {
   getComplementaryColorForHarmony,
   getTriadicColors,
   getAnalogousColors,
+  isWhiteColor,
+  isBlackInk,
 } from '@/utils/colorOperations'
 import { rgbToCmyk } from '@/utils/colorConversions'
-import ColorPreview from '@/components/ColorPreview/ColorPreview'
+import { getTemperatureLabel, getSaturationLabel, getLightnessLabel } from '@/utils/colorTraits'
 import Button from '@/components/Button/Button'
 import './ColorDetailsModal.css'
 
@@ -20,6 +22,10 @@ interface ColorDetailsModalProps {
   onFindRecipe?: (hex: string) => void
 }
 
+function needsLightText(color: Color): boolean {
+  return color.hsl.l < 50
+}
+
 function ColorDetailsModal({
   isOpen,
   colorHex,
@@ -27,332 +33,286 @@ function ColorDetailsModal({
   onAddToPalette,
   onFindRecipe,
 }: ColorDetailsModalProps) {
-  const [color, setColor] = useState<Color | null>(null)
-  const [copiedFormat, setCopiedFormat] = useState<string | null>(null)
-
-  useEffect(() => {
-    if (isOpen && colorHex) {
-      try {
-        const newColor = createColorFromHex(colorHex)
-        setColor(newColor)
-      } catch (error) {
-        console.error('Failed to create color from hex:', error)
-        setColor(null)
-      }
-    }
+  // A2-altitude fix: synchronously derived from prop — useMemo instead of useState+useEffect
+  const color = useMemo(() => {
+    if (!isOpen || !colorHex) return null
+    try { return createColorFromHex(colorHex) } catch { return null }
   }, [isOpen, colorHex])
 
-  useEffect(() => {
-    if (isOpen) {
-      const handleEscape = (e: KeyboardEvent) => {
-        if (e.key === 'Escape') {
-          onClose()
-        }
-      }
-      document.addEventListener('keydown', handleEscape)
-      document.body.style.overflow = 'hidden'
+  const [copiedFormat, setCopiedFormat] = useState<string | null>(null)
+  // B5 fix: track recently-added swatch hex codes for visual feedback
+  const [addedSwatches, setAddedSwatches] = useState<Set<string>>(new Set())
+  const swatchTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
 
-      return () => {
-        document.removeEventListener('keydown', handleEscape)
-        document.body.style.overflow = ''
-      }
+  useEffect(() => {
+    if (!isOpen) return
+    const handleEscape = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', handleEscape)
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.removeEventListener('keydown', handleEscape)
+      document.body.style.overflow = ''
     }
   }, [isOpen, onClose])
 
-  if (!isOpen || !color) {
-    return null
-  }
+  // B5 fix: clear swatch state when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setAddedSwatches(new Set())
+      swatchTimers.current.forEach(clearTimeout)
+      swatchTimers.current.clear()
+    }
+  }, [isOpen])
 
-  const colorName = getColorNameFromHue(color.hsl.h)
-  const cmyk = rgbToCmyk(color.rgb)
+  const character = useMemo(() => {
+    if (!color) return null
+    const temperatureTrait = getTemperatureLabel(color)
+    const saturationTrait = getSaturationLabel(color)
+    const lightnessTrait = getLightnessLabel(color)
+    // R2 fix: use isWhiteColor (l > 70 AND s < 20) for fade risk, not bare l > 70
+    const fadeRisk = isWhiteColor(color)
+    const isWhite = isWhiteColor(color)
+    const isBlack = isBlackInk(color)
+    return { temperatureTrait, saturationTrait, lightnessTrait, fadeRisk, isWhite, isBlack }
+  }, [color])
 
   const handleCopy = async (text: string, format: string) => {
     try {
       await navigator.clipboard.writeText(text)
       setCopiedFormat(format)
-      setTimeout(() => {
-        setCopiedFormat(null)
-      }, 2000)
-    } catch (error) {
-      console.error('Failed to copy:', error)
-    }
+      setTimeout(() => setCopiedFormat(null), 1800)
+    } catch { /* noop */ }
   }
 
-  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.target === e.currentTarget) {
-      onClose()
-    }
+  // B5 fix: swatch add with brief visual confirmation, dedup timer per hex
+  const handleAddSwatch = (hex: string) => {
+    onAddToPalette?.(hex)
+    setAddedSwatches(prev => new Set(prev).add(hex))
+    const prev = swatchTimers.current.get(hex)
+    if (prev) clearTimeout(prev)
+    const id = setTimeout(() => {
+      setAddedSwatches(prev => {
+        const next = new Set(prev)
+        next.delete(hex)
+        return next
+      })
+      swatchTimers.current.delete(hex)
+    }, 1500)
+    swatchTimers.current.set(hex, id)
   }
 
-  const formatRgb = () => {
-    return `rgb(${color.rgb.r}, ${color.rgb.g}, ${color.rgb.b})`
-  }
+  if (!isOpen || !color || !character) return null
 
-  const formatHsl = () => {
-    return `hsl(${color.hsl.h}, ${color.hsl.s}%, ${color.hsl.l}%)`
-  }
+  // A5 fix: show semantically correct name for black/white instead of getColorNameFromHue(0) = "красный"
+  const displayName = character.isBlack
+    ? 'чёрный пигмент'
+    : character.isWhite
+    ? 'белый / разбавитель'
+    : getColorNameFromHue(color.hsl.h)
 
-  const formatCmyk = () => {
-    return `cmyk(${cmyk.c}%, ${cmyk.m}%, ${cmyk.y}%, ${cmyk.k}%)`
-  }
+  const cmyk = rgbToCmyk(color.rgb)
+  const lightText = needsLightText(color)
+
+  const formatRgb = () => `rgb(${color.rgb.r}, ${color.rgb.g}, ${color.rgb.b})`
+  const formatHsl = () => `hsl(${color.hsl.h}, ${color.hsl.s}%, ${color.hsl.l}%)`
+  const formatCmyk = () => `cmyk(${cmyk.c}%, ${cmyk.m}%, ${cmyk.y}%, ${cmyk.k}%)`
+
+  const complementary = getComplementaryColorForHarmony(color)
+  // C6 fix: slice(1) to skip the first element which is the original color itself
+  const triadic = getTriadicColors(color).slice(1)
+  const analogous = getAnalogousColors(color)
 
   return (
-    <div className="color-details-modal-overlay" onClick={handleBackdropClick}>
+    <div className="cdm-overlay" onClick={e => { if (e.target === e.currentTarget) onClose() }}>
       <div
-        className="color-details-modal"
-        onClick={(e) => e.stopPropagation()}
+        className="cdm"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Информация о цвете"
+        onClick={e => e.stopPropagation()}
       >
-        <div className="color-details-modal__header">
-          <h2>Информация о цвете</h2>
-          <button
-            className="color-details-modal__close"
-            onClick={onClose}
-            aria-label="Закрыть"
-          >
-            ×
+        <div
+          className={`cdm__band${lightText ? ' cdm__band--light-text' : ''}`}
+          style={{ background: color.hex }}
+        >
+          <div className="cdm__band-content">
+            <div className="cdm__band-hex-row">
+              <span className="cdm__band-hex">{color.hex}</span>
+              <button
+                className="cdm__band-copy"
+                onClick={() => handleCopy(color.hex, 'hex')}
+                aria-label="Скопировать HEX"
+              >
+                {copiedFormat === 'hex' ? (
+                  <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
+                    <path d="M1.5 6.5l3.5 3.5 6.5-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                ) : (
+                  <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                    <rect x="1" y="4" width="9" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.5"/>
+                    <path d="M4 4V3a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1h-1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                  </svg>
+                )}
+              </button>
+            </div>
+            {/* A5 fix: display semantically correct name, not hue-derived "красный" for black/white */}
+            <div className="cdm__band-name">{displayName}</div>
+          </div>
+          <button className="cdm__close" onClick={onClose} aria-label="Закрыть">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path d="M1 1l14 14M15 1L1 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
           </button>
         </div>
 
-        <div className="color-details-modal__content">
-          <div className="color-details-modal__preview">
-            <ColorPreview color={color} size="large" />
+        <div className="cdm__body">
+          <div className="cdm__character">
+            {character.isWhite ? (
+              <div className="cdm__trait-row">
+                <span className="cdm__trait-label">Тип</span>
+                <span className="cdm__trait-value">Белый / Разбавитель</span>
+              </div>
+            ) : character.isBlack ? (
+              <div className="cdm__trait-row">
+                <span className="cdm__trait-label">Тип</span>
+                <span className="cdm__trait-value">Чёрный пигмент</span>
+              </div>
+            ) : (
+              <div className="cdm__trait-group">
+                <div className="cdm__trait-row">
+                  <span className="cdm__trait-label">Температура</span>
+                  <span className={`cdm__trait-value cdm__trait-value--${character.temperatureTrait.key}`}>
+                    {character.temperatureTrait.label}
+                  </span>
+                </div>
+                <div className="cdm__trait-row">
+                  <span className="cdm__trait-label">Насыщенность</span>
+                  <span className={`cdm__trait-value cdm__trait-value--${character.saturationTrait.key}`}>
+                    {character.saturationTrait.label}
+                  </span>
+                </div>
+                <div className="cdm__trait-row">
+                  <span className="cdm__trait-label">Светлота</span>
+                  <span className={`cdm__trait-value cdm__trait-value--${character.lightnessTrait.key}`}>
+                    {character.lightnessTrait.label}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {character.fadeRisk && (
+              <div className="cdm__warn" role="alert">
+                <span aria-hidden="true">⚠</span>
+                <span>Светлые цвета быстрее выцветают в коже</span>
+              </div>
+            )}
           </div>
 
-          <div className="color-details-modal__info">
-            <div className="color-details-modal__name">
-              <span className="color-details-modal__label">Название:</span>
-              <span className="color-details-modal__value">{colorName}</span>
+          <details className="cdm__details">
+            <summary className="cdm__details-summary">Форматы (RGB, HSL, CMYK)</summary>
+            <div className="cdm__details-content">
+              {[
+                { label: 'HEX', value: color.hex, format: 'hex-detail' },
+                { label: 'RGB', value: formatRgb(), format: 'rgb' },
+                { label: 'HSL', value: formatHsl(), format: 'hsl' },
+                { label: 'CMYK', value: formatCmyk(), format: 'cmyk' },
+              ].map(({ label, value, format }) => (
+                <div key={format} className="cdm__format-row">
+                  <span className="cdm__format-label">{label}</span>
+                  <code className="cdm__format-value">{value}</code>
+                  <button
+                    className={`cdm__format-copy${copiedFormat === format ? ' cdm__format-copy--done' : ''}`}
+                    onClick={() => handleCopy(value, format)}
+                    aria-label={`Скопировать ${label}`}
+                  >
+                    {copiedFormat === format ? '✓' : 'Копировать'}
+                  </button>
+                </div>
+              ))}
             </div>
+          </details>
 
-            <div className="color-details-modal__format-group">
-              <div className="color-details-modal__format-item">
-                <span className="color-details-modal__format-label">HEX</span>
-                <div className="color-details-modal__format-value-group">
-                  <code className="color-details-modal__format-value">{color.hex}</code>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleCopy(color.hex, 'hex')}
-                    title="Копировать HEX"
-                  >
-                    {copiedFormat === 'hex' ? '✓' : '📋'}
-                  </Button>
-                </div>
-              </div>
+          <div className="cdm__section">
+            <h3 className="cdm__section-title">Гармония</h3>
 
-              <div className="color-details-modal__format-item">
-                <span className="color-details-modal__format-label">RGB</span>
-                <div className="color-details-modal__format-value-group">
-                  <code className="color-details-modal__format-value">
-                    {formatRgb()}
-                  </code>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleCopy(formatRgb(), 'rgb')}
-                    title="Копировать RGB"
-                  >
-                    {copiedFormat === 'rgb' ? '✓' : '📋'}
-                  </Button>
-                </div>
-              </div>
-
-              <div className="color-details-modal__format-item">
-                <span className="color-details-modal__format-label">RGB значения</span>
-                <div className="color-details-modal__format-value-group">
-                  <code className="color-details-modal__format-value">
-                    {color.rgb.r}, {color.rgb.g}, {color.rgb.b}
-                  </code>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleCopy(`${color.rgb.r}, ${color.rgb.g}, ${color.rgb.b}`, 'rgb-values')}
-                    title="Копировать RGB значения"
-                  >
-                    {copiedFormat === 'rgb-values' ? '✓' : '📋'}
-                  </Button>
-                </div>
-              </div>
-
-              <div className="color-details-modal__format-item">
-                <span className="color-details-modal__format-label">HSL</span>
-                <div className="color-details-modal__format-value-group">
-                  <code className="color-details-modal__format-value">
-                    {formatHsl()}
-                  </code>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleCopy(formatHsl(), 'hsl')}
-                    title="Копировать HSL"
-                  >
-                    {copiedFormat === 'hsl' ? '✓' : '📋'}
-                  </Button>
-                </div>
-              </div>
-
-              <div className="color-details-modal__format-item">
-                <span className="color-details-modal__format-label">HSL значения</span>
-                <div className="color-details-modal__format-value-group">
-                  <code className="color-details-modal__format-value">
-                    H: {color.hsl.h}°, S: {color.hsl.s}%, L: {color.hsl.l}%
-                  </code>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleCopy(`${color.hsl.h}, ${color.hsl.s}, ${color.hsl.l}`, 'hsl-values')}
-                    title="Копировать HSL значения"
-                  >
-                    {copiedFormat === 'hsl-values' ? '✓' : '📋'}
-                  </Button>
-                </div>
-              </div>
-
-              <div className="color-details-modal__format-item">
-                <span className="color-details-modal__format-label">CMYK</span>
-                <div className="color-details-modal__format-value-group">
-                  <code className="color-details-modal__format-value">
-                    {formatCmyk()}
-                  </code>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleCopy(formatCmyk(), 'cmyk')}
-                    title="Копировать CMYK"
-                  >
-                    {copiedFormat === 'cmyk' ? '✓' : '📋'}
-                  </Button>
-                </div>
-              </div>
-
-              <div className="color-details-modal__format-item">
-                <span className="color-details-modal__format-label">CMYK значения</span>
-                <div className="color-details-modal__format-value-group">
-                  <code className="color-details-modal__format-value">
-                    C: {cmyk.c}%, M: {cmyk.m}%, Y: {cmyk.y}%, K: {cmyk.k}%
-                  </code>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleCopy(`${cmyk.c}, ${cmyk.m}, ${cmyk.y}, ${cmyk.k}`, 'cmyk-values')}
-                    title="Копировать CMYK значения"
-                  >
-                    {copiedFormat === 'cmyk-values' ? '✓' : '📋'}
-                  </Button>
-                </div>
+            <div className="cdm__harmony-block">
+              <div className="cdm__harmony-label">Дополнительный</div>
+              <div className="cdm__harmony-swatches">
+                <button
+                  className={`cdm__swatch${addedSwatches.has(complementary.hex) ? ' cdm__swatch--added' : ''}`}
+                  style={{ background: complementary.hex }}
+                  onClick={() => handleAddSwatch(complementary.hex)}
+                  title={`Добавить ${complementary.hex} в палитру`}
+                  aria-label={`Добавить ${complementary.hex} в палитру`}
+                >
+                  <span className="cdm__swatch-hex">
+                    {addedSwatches.has(complementary.hex) ? '✓' : complementary.hex}
+                  </span>
+                </button>
               </div>
             </div>
 
-            <div className="color-details-modal__harmony">
-              <h3 className="color-details-modal__harmony-title">Гармония цветов</h3>
-              
-              <div className="color-details-modal__harmony-section">
-                <div className="color-details-modal__harmony-header">
-                  <h4 className="color-details-modal__harmony-subtitle">Комплементарный</h4>
-                  <p className="color-details-modal__harmony-description">
-                    Противоположный цвет на цветовом круге. Создает контраст и динамику.
-                  </p>
-                </div>
-                <div className="color-details-modal__harmony-colors">
-                  {(() => {
-                    const complementary = getComplementaryColorForHarmony(color)
-                    return (
-                      <div
-                        key={complementary.hex}
-                        className="color-details-modal__harmony-color-item"
-                        onClick={() => onAddToPalette?.(complementary.hex)}
-                        title="Кликните для добавления в палитру"
-                      >
-                        <div
-                          className="color-details-modal__harmony-color-preview"
-                          style={{ backgroundColor: complementary.hex }}
-                        />
-                        <div className="color-details-modal__harmony-color-hex">{complementary.hex}</div>
-                      </div>
-                    )
-                  })()}
-                </div>
+            <div className="cdm__harmony-block">
+              {/* C6 fix: slice(1) already applied above — triadic no longer includes the original */}
+              <div className="cdm__harmony-label">Триада</div>
+              <div className="cdm__harmony-swatches">
+                {triadic.map(c => (
+                  <button
+                    key={c.hex}
+                    className={`cdm__swatch${addedSwatches.has(c.hex) ? ' cdm__swatch--added' : ''}`}
+                    style={{ background: c.hex }}
+                    onClick={() => handleAddSwatch(c.hex)}
+                    title={`Добавить ${c.hex} в палитру`}
+                    aria-label={`Добавить ${c.hex} в палитру`}
+                  >
+                    <span className="cdm__swatch-hex">
+                      {addedSwatches.has(c.hex) ? '✓' : c.hex}
+                    </span>
+                  </button>
+                ))}
               </div>
+            </div>
 
-              <div className="color-details-modal__harmony-section">
-                <div className="color-details-modal__harmony-header">
-                  <h4 className="color-details-modal__harmony-subtitle">Триада</h4>
-                  <p className="color-details-modal__harmony-description">
-                    Три равномерно распределенных цвета на цветовом круге (120°). Создает яркую, сбалансированную палитру.
-                  </p>
-                </div>
-                <div className="color-details-modal__harmony-colors">
-                  {getTriadicColors(color).map((triadicColor) => (
-                    <div
-                      key={triadicColor.hex}
-                      className="color-details-modal__harmony-color-item"
-                      onClick={() => onAddToPalette?.(triadicColor.hex)}
-                      title="Кликните для добавления в палитру"
-                    >
-                      <div
-                        className="color-details-modal__harmony-color-preview"
-                        style={{ backgroundColor: triadicColor.hex }}
-                      />
-                      <div className="color-details-modal__harmony-color-hex">{triadicColor.hex}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="color-details-modal__harmony-section">
-                <div className="color-details-modal__harmony-header">
-                  <h4 className="color-details-modal__harmony-subtitle">Аналоговые</h4>
-                  <p className="color-details-modal__harmony-description">
-                    Соседние цвета на цветовом круге (±30°). Создают мягкую, спокойную гармонию.
-                  </p>
-                </div>
-                <div className="color-details-modal__harmony-colors">
-                  {getAnalogousColors(color).map((analogousColor) => (
-                    <div
-                      key={analogousColor.hex}
-                      className="color-details-modal__harmony-color-item"
-                      onClick={() => onAddToPalette?.(analogousColor.hex)}
-                      title="Кликните для добавления в палитру"
-                    >
-                      <div
-                        className="color-details-modal__harmony-color-preview"
-                        style={{ backgroundColor: analogousColor.hex }}
-                      />
-                      <div className="color-details-modal__harmony-color-hex">{analogousColor.hex}</div>
-                    </div>
-                  ))}
-                </div>
+            <div className="cdm__harmony-block">
+              <div className="cdm__harmony-label">Аналоговые</div>
+              <div className="cdm__harmony-swatches">
+                {analogous.map(c => (
+                  <button
+                    key={c.hex}
+                    className={`cdm__swatch${addedSwatches.has(c.hex) ? ' cdm__swatch--added' : ''}`}
+                    style={{ background: c.hex }}
+                    onClick={() => handleAddSwatch(c.hex)}
+                    title={`Добавить ${c.hex} в палитру`}
+                    aria-label={`Добавить ${c.hex} в палитру`}
+                  >
+                    <span className="cdm__swatch-hex">
+                      {addedSwatches.has(c.hex) ? '✓' : c.hex}
+                    </span>
+                  </button>
+                ))}
               </div>
             </div>
           </div>
         </div>
 
-        <div className="color-details-modal__footer">
+        <div className="cdm__footer">
           {onFindRecipe && (
             <Button
               variant="primary"
-              onClick={() => {
-                onFindRecipe(color.hex)
-                onClose()
-              }}
+              onClick={() => { onFindRecipe(color.hex); onClose() }}
             >
-              🧪 Подобрать рецепт
+              Подобрать рецепт
             </Button>
           )}
           {onAddToPalette && (
             <Button
               variant="outline"
-              onClick={() => {
-                onAddToPalette(color.hex)
-                onClose()
-              }}
+              onClick={() => { onAddToPalette(color.hex); onClose() }}
             >
-              ➕ Добавить в палитру
+              В палитру
             </Button>
           )}
-          <Button variant="outline" onClick={onClose}>
-            Закрыть
-          </Button>
+          <Button variant="outline" onClick={onClose}>Закрыть</Button>
         </div>
       </div>
     </div>
@@ -360,4 +320,3 @@ function ColorDetailsModal({
 }
 
 export default ColorDetailsModal
-

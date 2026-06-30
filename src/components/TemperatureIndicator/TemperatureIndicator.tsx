@@ -10,54 +10,44 @@ interface TemperatureIndicatorProps {
 function TemperatureIndicator({ color, size = 'medium' }: TemperatureIndicatorProps) {
   const analysis = analyzeColorTemperature(color)
 
-  const getIcon = () => {
-    if (analysis.isNeutral) {
-      return '⚪'
-    } else if (analysis.isWarm) {
-      return '🔥'
-    } else {
-      return '❄️'
-    }
-  }
+  // 0% = полностью холодный, 50% = нейтральный, 100% = полностью тёплый
+  const rawPosition = analysis.isNeutral
+    ? 50
+    : ((analysis.temperature + 1) / 2) * 100
+  const position = Math.max(3, Math.min(97, rawPosition))
 
   const getLabel = () => {
-    if (analysis.isNeutral) {
-      return 'Нейтральный'
-    } else if (analysis.isWarm) {
-      return 'Теплый'
-    } else {
-      return 'Холодный'
-    }
+    if (analysis.isNeutral) return 'Нейтральный'
+    if (analysis.isWarm) return 'Тёплый'
+    return 'Холодный'
   }
+
+  const markerColor = analysis.isNeutral
+    ? '#9ca3af'
+    : analysis.isWarm
+    ? '#f59e0b'
+    : '#3b82f6'
 
   return (
     <div className={`temperature-indicator temperature-indicator--${size}`}>
-      <div
-        className={`temperature-indicator__content temperature-indicator__content--${
-          analysis.isWarm ? 'warm' : analysis.isCool ? 'cool' : 'neutral'
-        }`}
-      >
-        <span className="temperature-indicator__icon">{getIcon()}</span>
-        <span className="temperature-indicator__label">{getLabel()}</span>
-      </div>
-      {!analysis.isNeutral && analysis.temperature !== 0 && (
-        <div className="temperature-indicator__scale">
-          <div className="temperature-indicator__scale-track">
-            <div
-              className="temperature-indicator__scale-marker"
-              style={{
-                left: analysis.isWarm
-                  ? `${50 + (Math.abs(analysis.temperature) * 50)}%`
-                  : `${50 - (Math.abs(analysis.temperature) * 50)}%`,
-                backgroundColor: analysis.isWarm ? '#f59e0b' : '#3b82f6',
-              }}
-            />
+      <div className="temperature-indicator__scale">
+        <div className="temperature-indicator__scale-track">
+          <div
+            className="temperature-indicator__scale-marker"
+            style={{ left: `${position}%`, '--marker-color': markerColor } as React.CSSProperties}
+          >
+            <span className="temperature-indicator__scale-marker-label">
+              {getLabel()}
+            </span>
           </div>
         </div>
-      )}
+        <div className="temperature-indicator__scale-ends">
+          <span className="temperature-indicator__scale-end temperature-indicator__scale-end--cool">❄️ Холодный</span>
+          <span className="temperature-indicator__scale-end temperature-indicator__scale-end--warm">Тёплый 🔥</span>
+        </div>
+      </div>
     </div>
   )
 }
 
 export default TemperatureIndicator
-

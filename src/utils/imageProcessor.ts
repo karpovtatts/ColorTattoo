@@ -2,6 +2,8 @@
  * Утилиты для обработки изображений
  */
 
+import { rgbToHex, normalizeRgb } from './colorConversions'
+
 export interface PixelData {
   r: number
   g: number
@@ -146,6 +148,60 @@ export function createImagePreview(file: File): Promise<string> {
     reader.onerror = () => reject(new Error('Не удалось создать превью'))
     reader.readAsDataURL(file)
   })
+}
+
+/**
+ * Точечный сэмплинг цвета в указанной относительной точке изображения.
+ * Усредняет небольшой квадрат вокруг точки, чтобы сгладить шум/сжатие фото.
+ * @param canvas - Canvas с изображением (рекомендуется не уменьшенный для анализа,
+ *   а отдельный canvas повыше разрешением — для точности клика по мелкой детали)
+ * @param relX - Относительная позиция по X (0-1)
+ * @param relY - Относительная позиция по Y (0-1)
+ * @param radius - Радиус усреднения в пикселях canvas (по умолчанию 2, т.е. 5x5)
+ * @returns HEX цвет в точке
+ */
+export function sampleColorAtPoint(
+  canvas: HTMLCanvasElement,
+  relX: number,
+  relY: number,
+  radius: number = 2
+): string {
+  const ctx = canvas.getContext('2d')
+  if (!ctx) {
+    throw new Error('Не удалось получить контекст canvas')
+  }
+
+  const centerX = Math.min(canvas.width - 1, Math.max(0, Math.round(relX * canvas.width)))
+  const centerY = Math.min(canvas.height - 1, Math.max(0, Math.round(relY * canvas.height)))
+
+  const startX = Math.max(0, centerX - radius)
+  const startY = Math.max(0, centerY - radius)
+  const endX = Math.min(canvas.width - 1, centerX + radius)
+  const endY = Math.min(canvas.height - 1, centerY + radius)
+
+  const width = endX - startX + 1
+  const height = endY - startY + 1
+
+  const imageData = ctx.getImageData(startX, startY, width, height)
+
+  let totalR = 0
+  let totalG = 0
+  let totalB = 0
+  const pixelCount = width * height
+
+  for (let i = 0; i < imageData.data.length; i += 4) {
+    totalR += imageData.data[i]
+    totalG += imageData.data[i + 1]
+    totalB += imageData.data[i + 2]
+  }
+
+  return rgbToHex(
+    normalizeRgb({
+      r: totalR / pixelCount,
+      g: totalG / pixelCount,
+      b: totalB / pixelCount,
+    })
+  )
 }
 
 /**

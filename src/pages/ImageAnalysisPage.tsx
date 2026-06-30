@@ -6,14 +6,26 @@ import LoadingSpinner from '@/components/LoadingSpinner/LoadingSpinner'
 import Container from '@/components/Container/Container'
 import ColorDetailsModal from '@/components/ColorDetailsModal/ColorDetailsModal'
 import ImageHighlighter from '@/components/ImageHighlighter/ImageHighlighter'
-import { processImageFile, createImagePreview, createColorPixelMapping } from '@/utils/imageProcessor'
+import {
+  processImageFile,
+  createImagePreview,
+  createColorPixelMapping,
+  scaleImage,
+  sampleColorAtPoint,
+} from '@/utils/imageProcessor'
 import { usePaletteContext } from '@/contexts/PaletteContext'
 import { useColorContext } from '@/contexts/ColorContext'
 import { createColorFromHex, getColorNameFromHue } from '@/utils/colorOperations'
 import { rgbToCmyk } from '@/utils/colorConversions'
-import type { SelectionMethod } from '@/types'
+import { findRecipe } from '@/services/recipeFinder'
+import type { SelectionMethod, RecipeResult } from '@/types'
 import ColorAnalysisWorker from '@/workers/colorAnalysis.worker?worker'
 import './ImageAnalysisPage.css'
+
+// Максимальный размер canvas для точечного сэмплинга — заметно точнее, чем
+// 150px-превью, использующееся для автоматического анализа, но не настолько
+// большой, чтобы тормозить getImageData на каждый клик
+const SAMPLE_CANVAS_MAX_SIZE = 1600
 
 const COLOR_COUNT_OPTIONS = [8, 16, 24, 36, 72, 120] as const
 
@@ -34,11 +46,37 @@ function ImageAnalysisPage() {
   const [highlightedPixels, setHighlightedPixels] = useState<Array<{ x: number; y: number }>>([])
   const [highlightedHex, setHighlightedHex] = useState<string | null>(null)
   const [expandedColorHexes, setExpandedColorHexes] = useState<Set<string>>(new Set())
+  const [sampledPoints, setSampledPoints] = useState<Array<{ id: string; hex: string }>>([])
+  const [batchRecipes, setBatchRecipes] = useState<Map<string, RecipeResult | string>>(new Map())
+  const [isBatchLoading, setIsBatchLoading] = useState(false)
   const imageCanvasRef = useRef<HTMLCanvasElement | null>(null)
-  const { addColor } = usePaletteContext()
+  const sampleCanvasRef = useRef<HTMLCanvasElement | null>(null)
+  const { addColor, palette, validation } = usePaletteContext()
   const { setTargetColorFromHex } = useColorContext()
   const navigate = useNavigate()
   const workerRef = useRef<Worker | null>(null)
+
+  // Готовим canvas повышенного (относительно 150px-анализа) разрешения для
+  // точечного сэмплинга цвета по клику на фото — доступен сразу после
+  // загрузки фото, независимо от того, запускался ли автоматический анализ
+  useEffect(() => {
+    if (!imagePreview) {
+      sampleCanvasRef.current = null
+      return
+    }
+
+    let cancelled = false
+    const img = new Image()
+    img.onload = () => {
+      if (cancelled) return
+      sampleCanvasRef.current = scaleImage(img, SAMPLE_CANVAS_MAX_SIZE)
+    }
+    img.src = imagePreview
+
+    return () => {
+      cancelled = true
+    }
+  }, [imagePreview])
 
   // Инициализация и очистка Web Worker
   useEffect(() => {
@@ -82,6 +120,8 @@ function ImageAnalysisPage() {
     setError(null)
     setResults([])
     setHasAnalyzed(false)
+    setSampledPoints([])
+    setBatchRecipes(new Map())
 
     try {
       const preview = await createImagePreview(file)
@@ -131,7 +171,10 @@ function ImageAnalysisPage() {
     setError(null)
     setHasAnalyzed(false)
     setHighlightedPixels([])
+    setSampledPoints([])
+    setBatchRecipes(new Map())
     imageCanvasRef.current = null
+    sampleCanvasRef.current = null
   }
 
   const resultsRef = useRef<HTMLDivElement>(null)
@@ -154,6 +197,72 @@ function ImageAnalysisPage() {
       console.error('Не удалось установить целевой цвет', e)
       setError('Не удалось установить целевой цвет')
     }
+  }
+
+  const handlePhotoSample = ({ relX, relY }: { relX: number; relY: number }) => {
+    if (!sampleCanvasRef.current) return
+
+    try {
+      const hex = sampleColorAtPoint(sampleCanvasRef.current, relX, relY)
+      setSampledPoints((prev) => [
+        ...prev,
+        { id: `sample-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, hex },
+      ])
+    } catch (e) {
+      console.error('Не удалось взять цвет в этой точке', e)
+      setError('Не удалось взять цвет в этой точке')
+    }
+  }
+
+  const handleRemoveSampledPoint = (id: string) => {
+    setSampledPoints((prev) => prev.filter((p) => p.id !== id))
+    setBatchRecipes((prev) => {
+      const next = new Map(prev)
+      next.delete(id)
+      return next
+    })
+  }
+
+  const handleClearSampledPoints = () => {
+    setSampledPoints([])
+    setBatchRecipes(new Map())
+  }
+
+  const handleFindBatchRecipes = () => {
+    if (sampledPoints.length === 0) return
+
+    if (!validation.isValid) {
+      setError('Палитра невалидна. Добавьте минимум 2 уникальных цвета, чтобы подбирать рецепты.')
+      return
+    }
+
+    setIsBatchLoading(true)
+    setError(null)
+    setBatchRecipes(new Map())
+
+    const next = new Map<string, RecipeResult | string>()
+    const points = [...sampledPoints]
+
+    // Обрабатываем по одной точке за тик: каждый setTimeout(0) даёт браузеру
+    // кадр для отрисовки спиннера и сохраняет отзывчивость при длинных списках
+    const processNext = (index: number) => {
+      if (index >= points.length) {
+        setBatchRecipes(new Map(next))
+        setIsBatchLoading(false)
+        return
+      }
+      const point = points[index]
+      try {
+        const target = createColorFromHex(point.hex)
+        const results = findRecipe(target, { colors: palette.colors })
+        next.set(point.id, results[0])
+      } catch (e) {
+        next.set(point.id, e instanceof Error ? e.message : 'Не удалось подобрать рецепт')
+      }
+      setTimeout(() => processNext(index + 1), 0)
+    }
+
+    setTimeout(() => processNext(0), 0)
   }
 
   const handleCopyHex = async (hex: string) => {
@@ -252,6 +361,7 @@ function ImageAnalysisPage() {
                     opacity={0.6}
                     sourceWidth={imageCanvasRef.current?.width}
                     sourceHeight={imageCanvasRef.current?.height}
+                    onSample={handlePhotoSample}
                   />
                 )}
                 <Button
@@ -296,6 +406,117 @@ function ImageAnalysisPage() {
                   >
                     🧪
                   </button>
+                </div>
+              )}
+
+              <p className="image-analysis-page__sample-hint">
+                Тапните в любую точку фото, чтобы точно взять цвет именно там
+                (а не усреднённый по всему изображению)
+              </p>
+
+              {sampledPoints.length > 0 && (
+                <div className="image-analysis-page__samples">
+                  <div className="image-analysis-page__samples-header">
+                    <h3 className="image-analysis-page__samples-title">
+                      Точки на фото ({sampledPoints.length})
+                    </h3>
+                    <Button variant="outline" size="sm" onClick={handleClearSampledPoints}>
+                      Очистить
+                    </Button>
+                  </div>
+
+                  <div className="image-analysis-page__samples-list">
+                    {sampledPoints.map((point) => (
+                      <div key={point.id} className="image-analysis-page__sample-chip">
+                        <span
+                          className="image-analysis-page__sample-chip-swatch"
+                          style={{ backgroundColor: point.hex }}
+                          aria-hidden="true"
+                        />
+                        <code className="image-analysis-page__sample-chip-hex">{point.hex}</code>
+                        <button
+                          className="image-analysis-page__sample-chip-remove"
+                          onClick={() => handleRemoveSampledPoint(point.id)}
+                          title="Убрать точку"
+                          aria-label="Убрать точку"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  <Button
+                    onClick={handleFindBatchRecipes}
+                    disabled={isBatchLoading}
+                    className="image-analysis-page__samples-find-btn"
+                  >
+                    {isBatchLoading ? '⏳ Считаю рецепты...' : '🧪 Подобрать рецепты для всех точек'}
+                  </Button>
+
+                  {batchRecipes.size > 0 && (
+                    <div className="image-analysis-page__batch-results">
+                      {sampledPoints.map((point) => {
+                        const result = batchRecipes.get(point.id)
+                        if (!result) return null
+
+                        if (typeof result === 'string') {
+                          return (
+                            <div key={point.id} className="image-analysis-page__batch-result image-analysis-page__batch-result--error">
+                              <span
+                                className="image-analysis-page__sample-chip-swatch"
+                                style={{ backgroundColor: point.hex }}
+                                aria-hidden="true"
+                              />
+                              <span>{result}</span>
+                            </div>
+                          )
+                        }
+
+                        return (
+                          <div key={point.id} className="image-analysis-page__batch-result">
+                            <div className="image-analysis-page__batch-result-summary">
+                              <span
+                                className="image-analysis-page__batch-result-swatch"
+                                style={{ backgroundColor: point.hex }}
+                                aria-hidden="true"
+                              />
+                              <span className="image-analysis-page__batch-result-arrow">→</span>
+                              <span
+                                className="image-analysis-page__batch-result-swatch"
+                                style={{ backgroundColor: result.recipe.resultColor.hex }}
+                                aria-hidden="true"
+                              />
+                              <code className="image-analysis-page__batch-result-delta">
+                                ΔE {result.distance?.toFixed(1) ?? '—'}
+                              </code>
+                            </div>
+                            <div className="image-analysis-page__batch-result-ingredients">
+                              {result.recipe.ingredients.map((ing) => {
+                                const color = palette.colors.find((c) => c.id === ing.colorId)
+                                return (
+                                  <span
+                                    key={ing.colorId}
+                                    className="image-analysis-page__batch-ingredient"
+                                    title={color?.name || color?.hex}
+                                  >
+                                    <span
+                                      className="image-analysis-page__batch-ingredient-swatch"
+                                      style={{ backgroundColor: color?.hex }}
+                                      aria-hidden="true"
+                                    />
+                                    <code className="image-analysis-page__batch-ingredient-percent">
+                                      {Math.round(ing.proportion * 100)}%
+                                    </code>
+                                  </span>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
             </div>

@@ -33,6 +33,7 @@
   color: var(--color-text-primary);
 }
 
+/* Встроенный режим (триггер-кнопка) */
 .color-picker__popover {
   position: absolute;
   z-index: 1000;
@@ -47,6 +48,29 @@
   bottom: 0;
   left: 0;
   z-index: -1;
+}
+
+/* Управляемый режим (без триггера, центрированный оверлей) */
+.color-picker--controlled {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  overflow: visible;
+}
+
+.color-picker--controlled .color-picker__popover {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1000;
+}
+
+.color-picker--controlled .color-picker__cover {
+  z-index: 999;
+  background: rgba(0, 0, 0, 0.4);
 }
 
 .color-picker__panel {

@@ -133,6 +133,33 @@ export function formatRecipe(
 }
 
 /**
+ * Расчёт реального объёма каждого ингредиента под нужный общий объём смеси
+ * @param ingredients - Ингредиенты рецепта
+ * @param totalVolume - Желаемый общий объём смеси (в выбранных единицах)
+ * @returns Массив объёмов по каждому ингредиенту в том же порядке, что и ingredients
+ */
+export function calculateIngredientVolumes(
+  ingredients: RecipeIngredient[],
+  totalVolume: number
+): number[] {
+  return ingredients.map((ing) => ing.proportion * totalVolume)
+}
+
+/**
+ * Форматирование объёма ингредиента для отображения
+ * @param volume - Объём ингредиента
+ * @param unit - Единица измерения ('ml' - миллилитры, 'drops' - капли)
+ * @returns Отформатированная строка с объёмом
+ */
+export function formatIngredientVolume(volume: number, unit: 'ml' | 'drops'): string {
+  if (unit === 'drops') {
+    const rounded = Math.round(volume * 10) / 10
+    return `${rounded} ${getDropWord(Math.round(rounded))}`
+  }
+  return `${volume.toFixed(2)} мл`
+}
+
+/**
  * Получение правильной формы слова "капля"
  * @param count - Количество
  * @returns Правильная форма слова

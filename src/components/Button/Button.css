@@ -4,7 +4,8 @@
   border: none;
   border-radius: var(--radius-md);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background-color 0.16s ease, color 0.16s ease,
+    border-color 0.16s ease, box-shadow 0.16s ease, transform 0.12s ease;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -21,6 +22,8 @@
 .button--primary {
   background-color: var(--color-primary);
   color: white;
+  font-weight: 600;
+  letter-spacing: 0.015em;
 }
 
 .button--primary:hover:not(:disabled) {
@@ -29,6 +32,7 @@
 
 .button--primary:active:not(:disabled) {
   background-color: var(--color-primary-active);
+  transform: scale(0.97);
 }
 
 .button--secondary {

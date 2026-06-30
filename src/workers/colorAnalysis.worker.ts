@@ -155,26 +155,77 @@ function colorDistance(color1: PixelData, color2: PixelData): number {
   return Math.sqrt(dr * dr + dg * dg + db * db)
 }
 
+/**
+ * Детерминированная инициализация центроидов (вариант k-means++ без
+ * случайности — "farthest-point"/maximin seeding):
+ * 1. Первый центроид — пиксель, наиболее далёкий от среднего цвета фото.
+ * 2. Каждый следующий — пиксель, максимально далёкий от ВСЕХ уже выбранных.
+ * Даёт одинаковый результат при повторном анализе того же фото (в отличие
+ * от случайной выборки) и не позволяет двум центроидам совпасть.
+ */
 function initializeCentroids(pixels: PixelData[], k: number): PixelData[] {
   const centroids: PixelData[] = []
   const usedIndices = new Set<number>()
 
-  for (let i = 0; i < k && centroids.length < pixels.length; i++) {
-    let index: number
-    do {
-      index = Math.floor(Math.random() * pixels.length)
-    } while (usedIndices.has(index))
-
-    usedIndices.add(index)
-    centroids.push({ ...pixels[index] })
+  let sumR = 0
+  let sumG = 0
+  let sumB = 0
+  for (const pixel of pixels) {
+    sumR += pixel.r
+    sumG += pixel.g
+    sumB += pixel.b
+  }
+  const meanColor: PixelData = {
+    r: sumR / pixels.length,
+    g: sumG / pixels.length,
+    b: sumB / pixels.length,
   }
 
+  let firstIndex = 0
+  let maxDistance = -1
+  for (let i = 0; i < pixels.length; i++) {
+    const distance = colorDistance(pixels[i], meanColor)
+    if (distance > maxDistance) {
+      maxDistance = distance
+      firstIndex = i
+    }
+  }
+  centroids.push({ ...pixels[firstIndex] })
+  usedIndices.add(firstIndex)
+
+  // Расстояние от каждого пикселя до ближайшего из уже выбранных центроидов
+  const nearestCentroidDistance = pixels.map((pixel) => colorDistance(pixel, centroids[0]))
+
+  while (centroids.length < k && centroids.length < pixels.length) {
+    let bestIndex = -1
+    let bestDistance = -1
+
+    for (let i = 0; i < pixels.length; i++) {
+      if (usedIndices.has(i)) continue
+      if (nearestCentroidDistance[i] > bestDistance) {
+        bestDistance = nearestCentroidDistance[i]
+        bestIndex = i
+      }
+    }
+
+    if (bestIndex === -1) break
+
+    usedIndices.add(bestIndex)
+    const newCentroid = pixels[bestIndex]
+    centroids.push({ ...newCentroid })
+
+    for (let i = 0; i < pixels.length; i++) {
+      const distance = colorDistance(pixels[i], newCentroid)
+      if (distance < nearestCentroidDistance[i]) {
+        nearestCentroidDistance[i] = distance
+      }
+    }
+  }
+
+  // Пикселей физически меньше k (очень маленькое/однотонное фото) —
+  // достраиваем повторами последнего центроида, а не случайным цветом
   while (centroids.length < k) {
-    centroids.push({
-      r: Math.floor(Math.random() * 256),
-      g: Math.floor(Math.random() * 256),
-      b: Math.floor(Math.random() * 256),
-    })
+    centroids.push({ ...centroids[centroids.length - 1] })
   }
 
   return centroids
@@ -207,9 +258,10 @@ function assignPixelsToClusters(
 function updateCentroids(
   pixels: PixelData[],
   assignments: number[],
-  k: number
+  k: number,
+  oldCentroids: PixelData[]
 ): PixelData[] {
-  const newCentroids: PixelData[] = []
+  const newCentroids: Array<PixelData | null> = []
   const clusterSums: Array<{ r: number; g: number; b: number; count: number }> =
     Array(k)
       .fill(null)
@@ -224,6 +276,7 @@ function updateCentroids(
     cluster.count++
   }
 
+  const emptyClusterIndices: number[] = []
   for (let i = 0; i < k; i++) {
     const cluster = clusterSums[i]
     if (cluster.count > 0) {
@@ -233,15 +286,33 @@ function updateCentroids(
         b: Math.round(cluster.b / cluster.count),
       })
     } else {
-      newCentroids.push({
-        r: Math.floor(Math.random() * 256),
-        g: Math.floor(Math.random() * 256),
-        b: Math.floor(Math.random() * 256),
-      })
+      newCentroids.push(null)
+      emptyClusterIndices.push(i)
     }
   }
 
-  return newCentroids
+  // Пустой кластер (запросили больше цветов, чем есть в фото) раньше
+  // заполнялся случайным RGB — он мог попасть в результат как "найденный"
+  // цвет, которого на фото не было. Вместо этого отдаём кластер пикселю,
+  // который сейчас хуже всех обслужен своим текущим центроидом —
+  // детерминированно и без цветов "из ниоткуда"
+  if (emptyClusterIndices.length > 0) {
+    const worstFit = pixels
+      .map((pixel, index) => ({
+        index,
+        distance: colorDistance(pixel, oldCentroids[assignments[index]]),
+      }))
+      .sort((a, b) => b.distance - a.distance)
+
+    emptyClusterIndices.forEach((clusterIndex, i) => {
+      const candidate = worstFit[i]
+      newCentroids[clusterIndex] = candidate
+        ? { ...pixels[candidate.index] }
+        : { ...oldCentroids[clusterIndex] }
+    })
+  }
+
+  return newCentroids as PixelData[]
 }
 
 function hasConverged(
@@ -291,7 +362,7 @@ function quantizeColors(
 
   for (let iteration = 0; iteration < MAX_ITERATIONS; iteration++) {
     const assignments = assignPixelsToClusters(pixels, centroids)
-    const newCentroids = updateCentroids(pixels, assignments, k)
+    const newCentroids = updateCentroids(pixels, assignments, k, centroids)
 
     if (hasConverged(centroids, newCentroids)) {
       centroids = newCentroids

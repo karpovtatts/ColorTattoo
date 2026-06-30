@@ -5,6 +5,10 @@
   width: 100%;
 }
 
+.image-highlighter--sampleable {
+  cursor: crosshair;
+}
+
 .image-highlighter__image {
   display: block;
   max-width: 100%;

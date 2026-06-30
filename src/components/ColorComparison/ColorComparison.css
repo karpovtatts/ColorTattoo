@@ -52,8 +52,8 @@
 }
 
 .color-comparison__distance-value--close {
-  background-color: rgba(59, 130, 246, 0.1);
-  color: #3b82f6;
+  background-color: rgba(207, 138, 76, 0.1);
+  color: var(--color-primary);
 }
 
 /* Размеры */

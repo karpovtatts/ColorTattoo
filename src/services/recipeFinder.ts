@@ -7,6 +7,7 @@ import type {
 } from '@/types'
 import {
   createColorFromRgb,
+  createColorFromHex,
   isBlackInk,
   isColorful,
   getComplementaryColor,
@@ -209,18 +210,97 @@ function optimizeProportions(
   }
 }
 
+type RecipeCandidate = {
+  ingredients: RecipeIngredient[]
+  resultColor: Color
+  distance: number
+}
+
+/**
+ * Сборка полного RecipeResult (с оптимизацией порядка, проверкой
+ * последовательного смешивания и предупреждениями) из кандидата,
+ * найденного перебором комбинаций.
+ */
+function buildRecipeResult(
+  targetColor: Color,
+  candidate: RecipeCandidate,
+  getColorById: (id: string) => Color | undefined,
+  usablePalette: Color[]
+): RecipeResult {
+  // Оптимизируем порядок ингредиентов: сначала базовый/основной цвет
+  // (самая большая доля), затем корректирующие — это обеспечивает более
+  // предсказуемый результат при реальном смешивании
+  const optimizedIngredients = optimizeIngredientOrder(
+    candidate.ingredients,
+    targetColor,
+    getColorById
+  )
+
+  // Проверяем, влияет ли порядок на результат
+  let finalResultColor = candidate.resultColor
+  try {
+    const sequentialResult = mixColorsSubtractiveSequential(optimizedIngredients, getColorById)
+    const sequentialColor = createColorFromRgb(sequentialResult)
+    const sequentialDistance = calculateColorDistancePerceptualFull(targetColor, sequentialColor)
+
+    if (sequentialDistance < candidate.distance) {
+      finalResultColor = sequentialColor
+    }
+  } catch (e) {
+    console.warn('Failed to test sequential mixing:', e)
+  }
+
+  const recipe: Recipe = {
+    id: `recipe-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    targetColor,
+    resultColor: finalResultColor,
+    ingredients: optimizedIngredients,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  }
+
+  const { analysis, warnings } = analyzeColorAndRecipe(recipe, getColorById)
+
+  const isExactMatch = candidate.distance < EXACT_MATCH_THRESHOLD
+  const isUnreachable = candidate.distance > UNREACHABLE_THRESHOLD
+
+  if (isUnreachable) {
+    const explanation = generateUnreachableExplanation(
+      targetColor,
+      candidate.resultColor,
+      candidate.ingredients,
+      getColorById,
+      usablePalette
+    )
+
+    warnings.push({
+      type: 'unreachable',
+      message: explanation,
+      severity: 'high',
+    })
+  }
+
+  return {
+    recipe,
+    analysis,
+    warnings,
+    isExactMatch,
+    distance: candidate.distance,
+  }
+}
+
 /**
  * Поиск рецепта для целевого цвета
  * @param targetColor - Целевой цвет
  * @param palette - Палитра пользователя
- * @param maxIngredients - Максимальное количество ингредиентов (по умолчанию 3)
- * @returns Результат подбора рецепта или информация о недостижимом цвете
+ * @param maxIngredients - Максимальное количество ингредиентов (по умолчанию 4)
+ * @returns Массив вариантов рецепта (от самого точного до более простых), минимум один элемент
  */
 export function findRecipe(
   targetColor: Color,
   palette: UserPalette,
   maxIngredients: number = MAX_INGREDIENTS
-): RecipeResult {
+): RecipeResult[] {
   if (palette.colors.length === 0) {
     throw new Error('Палитра пуста. Добавьте цвета в палитру.')
   }
@@ -238,7 +318,7 @@ export function findRecipe(
   // Используем перцептивную метрику для проверки точного совпадения
   let nearestInPalette = palette.colors[0]
   let minDistance = calculateColorDistancePerceptualFull(targetColor, nearestInPalette)
-  
+
   for (let i = 1; i < palette.colors.length; i++) {
     const distance = calculateColorDistancePerceptualFull(targetColor, palette.colors[i])
     if (distance < minDistance) {
@@ -246,9 +326,9 @@ export function findRecipe(
       nearestInPalette = palette.colors[i]
     }
   }
-  
+
   if (minDistance < EXACT_MATCH_THRESHOLD) {
-    // Точное совпадение - используем один цвет
+    // Точное совпадение - используем один цвет, альтернатив тут не нужно
     const recipe: Recipe = {
       id: `recipe-${Date.now()}`,
       targetColor,
@@ -263,24 +343,18 @@ export function findRecipe(
       updatedAt: new Date(),
     }
 
-    // Анализируем рецепт (даже для одного цвета)
     const { analysis, warnings } = analyzeColorAndRecipe(recipe, getColorById)
 
-    return {
-      recipe,
-      analysis,
-      warnings,
-      isExactMatch: true,
-      distance: minDistance,
-    }
+    return [
+      {
+        recipe,
+        analysis,
+        warnings,
+        isExactMatch: true,
+        distance: minDistance,
+      },
+    ]
   }
-
-  // Перебираем комбинации от 1 до maxIngredients цветов
-  let bestResult: {
-    ingredients: RecipeIngredient[]
-    resultColor: Color
-    distance: number
-  } | null = null
 
   // Проверяем, является ли целевой цвет цветным (не ЧБ)
   const isTargetColorful = isColorful(targetColor)
@@ -288,19 +362,16 @@ export function findRecipe(
   // Для хроматических цветов исключаем черные чернила из палитры
   // Это гарантирует, что алгоритм не будет использовать черный для затемнения
   // БЕЛЫЙ цвет НЕ исключается - он используется для осветления светлых цветов
-  // Алгоритм автоматически подберет белый, если целевой цвет светлый и белый есть в палитре
   let usablePalette = palette.colors
   if (isTargetColorful) {
     usablePalette = palette.colors.filter((color) => !isBlackInk(color))
-    
-    // Если после фильтрации палитра пуста, выбрасываем ошибку
+
     if (usablePalette.length === 0) {
       throw new Error(
         'В палитре остались только черные чернила. Для цветных тату добавьте хроматические цвета в палитру.'
       )
     }
-    
-    // Если палитра стала слишком маленькой, предупреждаем
+
     if (usablePalette.length < 2) {
       throw new Error(
         'В палитре недостаточно цветных чернил (минимум 2). Добавьте больше цветов в палитру.'
@@ -308,116 +379,76 @@ export function findRecipe(
     }
   }
 
+  // Перебираем комбинации от 1 до maxIngredients цветов, запоминая лучший
+  // результат для КАЖДОГО количества ингредиентов — это даёт материал для
+  // альтернатив (точнее vs проще), а не только один глобальный лучший
+  const bestByCount = new Map<number, RecipeCandidate>()
+
   for (let ingredientCount = 1; ingredientCount <= maxIngredients; ingredientCount++) {
     const combinations = generateCombinations(usablePalette, ingredientCount)
+    let bestForCount: RecipeCandidate | null = null
 
     for (const combination of combinations) {
       const colors = combination.map((idx) => usablePalette[idx])
-
-      // Оптимизируем пропорции для этой комбинации
       const optimized = optimizeProportions(targetColor, colors)
 
-      // Для хроматических цветов черный уже исключен из палитры,
-      // поэтому штрафы за черный больше не нужны
-      // (оставляем код для обратной совместимости, но он не должен срабатывать)
-
-      // Сравниваем результаты
-      const currentBestDistance = bestResult ? bestResult.distance : Infinity
-      if (optimized.distance < currentBestDistance) {
-        bestResult = {
+      if (!bestForCount || optimized.distance < bestForCount.distance) {
+        bestForCount = {
           ingredients: colors.map((color, idx) => ({
             colorId: color.id,
             proportion: optimized.proportions[idx],
           })),
           resultColor: optimized.resultColor,
-          distance: optimized.distance, // Сохраняем реальное расстояние без штрафа
+          distance: optimized.distance,
         }
       }
 
-      // Если нашли точное совпадение (без штрафов), прекращаем поиск
       if (optimized.distance < EXACT_MATCH_THRESHOLD) {
         break
       }
     }
 
-    // Если нашли точное совпадение, прекращаем поиск
-    if (bestResult && bestResult.distance < EXACT_MATCH_THRESHOLD) {
-      break
+    if (bestForCount) {
+      bestByCount.set(ingredientCount, bestForCount)
+
+      // Точнее, чем точное совпадение, не станет — больше ингредиентов не нужно
+      if (bestForCount.distance < EXACT_MATCH_THRESHOLD) {
+        break
+      }
     }
   }
 
-  if (!bestResult) {
+  if (bestByCount.size === 0) {
     throw new Error('Не удалось найти рецепт. Проверьте палитру.')
   }
 
-  // Оптимизируем порядок ингредиентов
-  // Для тату-красок рекомендуется: сначала базовый/основной цвет (самая большая доля),
-  // затем корректирующие цвета (меньшие доли)
-  // Это обеспечивает более предсказуемый результат при смешивании
-  const optimizedIngredients = optimizeIngredientOrder(
-    bestResult.ingredients,
-    targetColor,
-    getColorById
+  const entries = Array.from(bestByCount.entries()).map(([count, candidate]) => ({
+    count,
+    ...candidate,
+  }))
+
+  const best = entries.reduce((min, entry) => (entry.distance < min.distance ? entry : min))
+
+  // Альтернативы: до 2 более простых вариантов (меньше ингредиентов), у которых
+  // результат заметно отличается от самого точного — иначе показывать их бессмысленно
+  const alternatives = [best]
+  const byCountAscending = [...entries].sort((a, b) => a.count - b.count)
+
+  for (const entry of byCountAscending) {
+    if (alternatives.length >= 3) break
+    if (alternatives.some((picked) => entry.count >= picked.count)) continue
+
+    const resultDiff = calculateColorDistancePerceptualFull(entry.resultColor, best.resultColor)
+    if (resultDiff < 1) continue
+
+    alternatives.push(entry)
+  }
+
+  alternatives.sort((a, b) => a.distance - b.distance)
+
+  return alternatives.map((candidate) =>
+    buildRecipeResult(targetColor, candidate, getColorById, usablePalette)
   )
-
-  // Проверяем, влияет ли порядок на результат (для информации)
-  // В математической модели CMYK это не должно сильно влиять, но проверим
-  let finalResultColor = bestResult.resultColor
-  try {
-    const sequentialResult = mixColorsSubtractiveSequential(optimizedIngredients, getColorById)
-    const sequentialColor = createColorFromRgb(sequentialResult)
-    const sequentialDistance = calculateColorDistancePerceptualFull(targetColor, sequentialColor)
-    
-    // Если последовательное смешивание дает лучший результат, используем его
-    if (sequentialDistance < bestResult.distance) {
-      finalResultColor = sequentialColor
-    }
-  } catch (e) {
-    // Если ошибка при последовательном смешивании, используем исходный результат
-    console.warn('Failed to test sequential mixing:', e)
-  }
-
-  // Всегда создаем рецепт, даже если цвет недостижим
-  // Пользователь должен видеть, какие цвета нужно смешивать
-  const recipe: Recipe = {
-    id: `recipe-${Date.now()}`,
-    targetColor,
-    resultColor: finalResultColor,
-    ingredients: optimizedIngredients, // Используем оптимизированный порядок
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  }
-
-  // Анализируем рецепт (правила R01, R02)
-  const { analysis, warnings } = analyzeColorAndRecipe(recipe, getColorById)
-
-  const isExactMatch = bestResult.distance < EXACT_MATCH_THRESHOLD
-  const isUnreachable = bestResult.distance > UNREACHABLE_THRESHOLD
-
-  // Если цвет недостижим, добавляем предупреждение
-  if (isUnreachable) {
-    const explanation = generateUnreachableExplanation(
-      targetColor,
-      bestResult.resultColor,
-      bestResult.ingredients,
-      getColorById,
-      usablePalette // Передаем отфильтрованную палитру для проверки комплементарных цветов
-    )
-    
-    warnings.push({
-      type: 'unreachable',
-      message: explanation,
-      severity: 'high',
-    })
-  }
-
-  return {
-    recipe,
-    analysis,
-    warnings,
-    isExactMatch,
-    distance: bestResult.distance,
-  }
 }
 
 /**
@@ -461,6 +492,77 @@ function optimizeIngredientOrder(
   })
 
   return sorted
+}
+
+// Универсальные базовые цвета, которые есть у большинства тату-мастеров
+const UNIVERSAL_BASE_COLORS: { hex: string; name: string }[] = [
+  { hex: '#00A0D8', name: 'Голубой' },
+  { hex: '#E01050', name: 'Малиновый' },
+  { hex: '#F0C800', name: 'Жёлтый' },
+  { hex: '#10B040', name: 'Зелёный' },
+  { hex: '#7030A0', name: 'Фиолетовый' },
+  { hex: '#F05808', name: 'Оранжевый' },
+  { hex: '#C82010', name: 'Красный' },
+  { hex: '#00B8A8', name: 'Бирюзовый' },
+  { hex: '#FF70B0', name: 'Розовый' },
+]
+
+export type PaletteAdditionSuggestion = {
+  color: Color
+  recipe: RecipeResult
+  distanceBefore: number
+  distanceAfter: number
+}
+
+/**
+ * Ищет одну краску, которую можно добавить к текущей палитре чтобы получить целевой цвет.
+ * Возвращает null если улучшение незначительное или уже достижимо.
+ */
+export function findBestPaletteAddition(
+  targetColor: Color,
+  currentPalette: Color[],
+  currentBestDistance: number
+): PaletteAdditionSuggestion | null {
+  if (currentBestDistance <= UNREACHABLE_THRESHOLD) return null
+
+  let bestSuggestion: PaletteAdditionSuggestion | null = null
+  let bestDistanceAfter = currentBestDistance
+
+  for (const { hex, name } of UNIVERSAL_BASE_COLORS) {
+    const candidateColor = createColorFromHex(hex, `suggestion-${hex.slice(1)}`, name)
+
+    // Пропускаем если похожий оттенок уже есть в палитре
+    const alreadyPresent = currentPalette.some((c) => {
+      const hueDiff = Math.abs(c.hsl.h - candidateColor.hsl.h)
+      const hueDistance = hueDiff > 180 ? 360 - hueDiff : hueDiff
+      return hueDistance < 30 && c.hsl.s > 30
+    })
+    if (alreadyPresent) continue
+
+    try {
+      const extendedPalette: UserPalette = { colors: [...currentPalette, candidateColor] }
+      const results = findRecipe(targetColor, extendedPalette, 3)
+      const dist = results[0]?.distance
+      if (results.length > 0 && dist !== undefined && dist < bestDistanceAfter) {
+        bestDistanceAfter = dist
+        bestSuggestion = {
+          color: candidateColor,
+          recipe: results[0],
+          distanceBefore: currentBestDistance,
+          distanceAfter: dist,
+        }
+      }
+    } catch {
+      // пропускаем этот кандидат
+    }
+
+    if (bestDistanceAfter < EXACT_MATCH_THRESHOLD) break
+  }
+
+  // Предлагаем только если улучшение значимое (минимум 5 единиц ΔE)
+  if (!bestSuggestion || currentBestDistance - bestSuggestion.distanceAfter < 5) return null
+
+  return bestSuggestion
 }
 
 /**

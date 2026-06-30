@@ -2,9 +2,8 @@ import { Link, useLocation } from 'react-router-dom'
 import './Navigation.css'
 
 const NAV_ITEMS = [
-  { path: '/', label: 'Главная', icon: '🏠' },
+  { path: '/', label: 'Рецепт', icon: '🧪' },
   { path: '/palette', label: 'Палитра', icon: '📋' },
-  { path: '/recipe', label: 'Рецепт', icon: '🧪' },
   { path: '/saved', label: 'Сохранённые', icon: '💾' },
   { path: '/image-analysis', label: 'Анализ фото', icon: '📷' },
 ] as const

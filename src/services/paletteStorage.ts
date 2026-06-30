@@ -44,11 +44,15 @@ export function getDefaultPalette(): UserPalette {
     createColorFromHex('#FF0000', 'red-1', 'Красный'),
     createColorFromHex('#0000FF', 'blue-1', 'Синий'),
     createColorFromHex('#FFFF00', 'yellow-1', 'Жёлтый'),
-    // Маджента как отдельный базовый канал для фиолетов/сиреневых
     createColorFromHex('#FF00FF', 'magenta-1', 'Маджента'),
-    // Акроматические для разбавления/затемнения
+    // Белый для осветления
     createColorFromHex('#FFFFFF', 'white-1', 'Белый'),
-    createColorFromHex('#000000', 'black-1', 'Чёрный'),
+    // Silver Series — градации для затемнения в цветных работах
+    createColorFromHex('#000000', 'silver-100', 'Сильвер 100%'),
+    createColorFromHex('#404040', 'silver-75', 'Сильвер 75%'),
+    createColorFromHex('#808080', 'silver-50', 'Сильвер 50%'),
+    createColorFromHex('#BFBFBF', 'silver-25', 'Сильвер 25%'),
+    createColorFromHex('#D9D9D9', 'silver-15', 'Сильвер 15%'),
   ]
 
   return {

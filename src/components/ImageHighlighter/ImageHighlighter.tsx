@@ -13,6 +13,9 @@ interface ImageHighlighterProps {
   // оказываются смещены.
   sourceWidth?: number
   sourceHeight?: number
+  // Если задан, по клику/тапу на фото вызывается с относительной (0-1)
+  // позицией клика внутри изображения — для точечного сэмплинга цвета
+  onSample?: (point: { relX: number; relY: number }) => void
 }
 
 function ImageHighlighter({
@@ -22,6 +25,7 @@ function ImageHighlighter({
   opacity = 0.6,
   sourceWidth,
   sourceHeight,
+  onSample,
 }: ImageHighlighterProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const overlayRef = useRef<HTMLCanvasElement>(null)
@@ -99,8 +103,24 @@ function ImageHighlighter({
     })
   }, [imageLoaded, imageSize, highlightedPixels, highlightColor, opacity, sourceWidth, sourceHeight])
 
+  const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!onSample || !containerRef.current) return
+
+    const rect = containerRef.current.getBoundingClientRect()
+    const relX = (e.clientX - rect.left) / rect.width
+    const relY = (e.clientY - rect.top) / rect.height
+
+    if (relX < 0 || relX > 1 || relY < 0 || relY > 1) return
+
+    onSample({ relX, relY })
+  }
+
   return (
-    <div ref={containerRef} className="image-highlighter">
+    <div
+      ref={containerRef}
+      className={`image-highlighter ${onSample ? 'image-highlighter--sampleable' : ''}`}
+      onClick={handleClick}
+    >
       <img
         src={imageSrc}
         alt="Изображение"

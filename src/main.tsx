@@ -3,6 +3,14 @@ import ReactDOM from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
 
+// Сносим сервис-воркеры чужих приложений, которые могли быть зарегистрированы
+// по этому же пути ранее — они перехватывают навигацию и ломают роутинг
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then((registrations) => {
+    registrations.forEach((r) => r.unregister())
+  })
+}
+
 // Подавляем не критичные warnings от библиотек
 // Это не ошибки, а предупреждения о будущих изменениях
 const originalWarn = console.warn

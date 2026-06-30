@@ -11,8 +11,8 @@
 }
 
 .color-swatch:hover {
-  border-color: var(--color-primary);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-color: rgba(207, 138, 76, 0.4);
+  box-shadow: var(--shadow-md);
 }
 
 .color-swatch__preview {
@@ -68,7 +68,7 @@
 
 .color-swatch__tooltip-hex {
   font-weight: 600;
-  font-family: monospace;
+  font-family: var(--font-mono);
   margin-bottom: 0.25rem;
 }
 
@@ -81,7 +81,7 @@
 .color-swatch__tooltip-rgb {
   font-size: 0.75rem;
   color: var(--color-text-tertiary);
-  font-family: monospace;
+  font-family: var(--font-mono);
 }
 
 .color-swatch__name {
